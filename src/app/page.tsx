@@ -1,449 +1,360 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Calendar, Clock, MapPin, Plus, User, LogOut, Trophy, Menu, Bell, Settings } from 'lucide-react'
-import { formatDate, formatTime } from '@/lib/utils'
+import { Clock, MapPin, Phone, Users, Calendar, Trophy, Star, ArrowRight, Play, Shield, Zap, Award, Menu } from 'lucide-react'
 
-interface UserProfile {
-  id: string
-  name: string
-  phone: string | null
-  role: 'USER' | 'ADMIN'
-}
-
-interface Reservation {
-  id: string
-  date: string
-  start_time: string
-  end_time: string
-  status: 'ACTIVE' | 'CANCELLED' | 'CANCELLED_ADMIN' | 'COMPLETED'
-  court: {
-    id: string
-    name: string
-    sport_type: {
-      name: string
+export default function HomePage() {
+  const courts = [
+    { 
+      name: 'Tenis', 
+      count: 2, 
+      price: 25, 
+      icon: '🎾',
+      description: 'Canchas profesionales con superficie de primera calidad',
+      features: ['Iluminación LED', 'Superficie profesional', 'Graderías']
+    },
+    { 
+      name: 'Pádel', 
+      count: 2, 
+      price: 30, 
+      icon: '🏓',
+      description: 'Canchas reglamentarias con cristales panorámicos',
+      features: ['Cristal panorámico', 'Césped sintético', 'Climatizado']
+    },
+    { 
+      name: 'Fútbol 5', 
+      count: 1, 
+      price: 50, 
+      icon: '⚽',
+      description: 'Campo de césped sintético de última generación',
+      features: ['Césped FIFA Quality', 'Iluminación profesional', 'Vestuarios']
     }
-  }
-}
+  ]
 
-export default function DashboardPageMobile() {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [reservations, setReservations] = useState<Reservation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showMenu, setShowMenu] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    loadUserData()
-  }, [])
-
-  const loadUserData = async () => {
-    try {
-      // Obtener usuario actual
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // Obtener perfil del usuario
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profileError) {
-        console.error('Error loading profile:', profileError)
-      } else {
-        setProfile(profileData)
-      }
-
-      // Obtener reservas del usuario con filtro de fechas
-      const { data: reservationsData, error: reservationsError } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          court:courts (
-            id,
-            name,
-            sport_type:sport_types (
-              name
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .gte('date', new Date().toISOString().split('T')[0]) // Solo reservas de hoy en adelante
-        .order('date', { ascending: true })
-        .order('start_time', { ascending: true })
-
-      if (reservationsError) {
-        console.error('Error loading reservations:', reservationsError)
-      } else {
-        setReservations(reservationsData || [])
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error)
-    } finally {
-      setLoading(false)
+  const features = [
+    { 
+      icon: <Calendar className="h-7 w-7" />, 
+      title: 'Reservas Online', 
+      desc: 'Sistema de reservas 24/7 con confirmación instantánea',
+      color: 'bg-slate-600'
+    },
+    { 
+      icon: <Shield className="h-7 w-7" />, 
+      title: 'Seguridad Total', 
+      desc: 'Instalaciones seguras con vigilancia y protocolos sanitarios',
+      color: 'bg-emerald-600'
+    },
+    { 
+      icon: <Zap className="h-7 w-7" />, 
+      title: 'Tecnología Avanzada', 
+      desc: 'Canchas equipadas con la mejor tecnología deportiva',
+      color: 'bg-indigo-600'
+    },
+    { 
+      icon: <Award className="h-7 w-7" />, 
+      title: 'Calidad Premium', 
+      desc: 'Instalaciones certificadas de nivel profesional',
+      color: 'bg-amber-600'
     }
-  }
+  ]
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-      CANCELLED_ADMIN: 'bg-orange-100 text-orange-800',
-      COMPLETED: 'bg-gray-100 text-gray-800'
-    }
-    
-    const labels = {
-      ACTIVE: 'Activa',
-      CANCELLED: 'Cancelada',
-      CANCELLED_ADMIN: 'Cancelada por Admin',
-      COMPLETED: 'Completada'
-    }
-
-    return (
-      <Badge className={`${styles[status as keyof typeof styles]} text-xs px-1.5 py-0.5`}>
-        {labels[status as keyof typeof labels]}
-      </Badge>
-    )
-  }
-
-  const getSportIcon = (sportName: string) => {
-    const icons: { [key: string]: string } = {
-      'Tenis': '🎾',
-      'Pádel': '🏓',
-      'Fútbol': '⚽'
-    }
-    return icons[sportName] || '🏟️'
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    )
-  }
+  const stats = [
+    { number: '500+', label: 'Miembros Activos', icon: <Users className="h-5 w-5" /> },
+    { number: '2000+', label: 'Partidos Jugados', icon: <Trophy className="h-5 w-5" /> },
+    { number: '98%', label: 'Satisfacción', icon: <Star className="h-5 w-5" /> },
+    { number: '5', label: 'Canchas Premium', icon: <MapPin className="h-5 w-5" /> }
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Sticky */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="px-4 sm:px-6">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center min-w-0 flex-1">
-              <Trophy className="h-6 w-6 text-green-600 mr-2 flex-shrink-0" />
-              <h1 className="text-lg font-bold text-gray-900">SportCenter</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - Mejorado para mobile */}
+      <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3 sm:py-4">
+            <div className="flex items-center min-w-0">
+              <div className="relative flex-shrink-0">
+                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600 mr-2 sm:mr-3" />
+                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">SportCenter</h1>
+                <p className="text-xs text-slate-500 font-medium hidden sm:block">CLUB DEPORTIVO PREMIUM</p>
+              </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Notificaciones (placeholder) */}
-              <Button variant="ghost" size="sm">
-                <Bell className="h-5 w-5" />
+            {/* Desktop Navigation */}
+            <div className="hidden sm:flex gap-3">
+              <Button variant="ghost" asChild className="hover:bg-emerald-50 transition-colors">
+                <Link href="/auth/login">Iniciar Sesión</Link>
               </Button>
-              
-              {/* Menu lateral */}
-              <Sheet open={showMenu} onOpenChange={setShowMenu}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-green-100 text-green-600 text-lg font-semibold">
-                          {profile?.name 
-                            ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                            : 'U'
-                          }
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <SheetTitle className="text-left">{profile?.name || 'Usuario'}</SheetTitle>
-                        <SheetDescription className="text-left">
-                          {profile?.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
-                        </SheetDescription>
-                      </div>
-                    </div>
-                  </SheetHeader>
-                  
-                  <div className="space-y-4 mt-6">
-                    {/* Navegación */}
-                    <div className="space-y-2">
-                      <Button variant="ghost" asChild className="w-full justify-start h-12">
-                        <Link href="/reservas" onClick={() => setShowMenu(false)}>
-                          <Plus className="h-5 w-5 mr-3" />
-                          Nueva Reserva
-                        </Link>
-                      </Button>
-                      
-                      <Button variant="ghost" asChild className="w-full justify-start h-12">
-                        <Link href="/reservas/mis-reservas" onClick={() => setShowMenu(false)}>
-                          <Calendar className="h-5 w-5 mr-3" />
-                          Mis Reservas
-                        </Link>
-                      </Button>
-                      
-                      {profile?.role === 'ADMIN' && (
-                        <Button variant="ghost" asChild className="w-full justify-start h-12">
-                          <Link href="/admin" onClick={() => setShowMenu(false)}>
-                            <Settings className="h-5 w-5 mr-3" />
-                            Panel Admin
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* Información del usuario */}
-                    <div className="pt-4 border-t">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span>{profile?.phone || 'Sin teléfono'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Logout */}
-                    <div className="pt-4 border-t">
-                      <Button 
-                        variant="outline" 
-                        onClick={handleLogout} 
-                        className="w-full justify-start h-12 text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        <LogOut className="h-5 w-5 mr-3" />
-                        Cerrar Sesión
-                      </Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <Button asChild className="bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm">
+                <Link href="/auth/register">
+                  <span className="hidden md:inline">Únete Ahora</span>
+                  <span className="md:hidden">Únete</span>
+                  <ArrowRight className="ml-1 md:ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Mobile Navigation */}
+            <div className="flex sm:hidden gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/auth/login">Login</Link>
+              </Button>
+              <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700">
+                <Link href="/auth/register">
+                  Únete
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
-        {/* Welcome Section - Optimizada para móvil */}
-        <div className="mb-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Avatar className="h-14 w-14 flex-shrink-0">
-              <AvatarFallback className="bg-green-100 text-green-600 text-lg font-semibold">
-                {profile?.name 
-                  ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                  : 'U'
-                }
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 truncate">
-                ¡Hola, {profile?.name?.split(' ')[0] || 'Usuario'}! 👋
-              </h2>
-              <p className="text-gray-600 text-sm">Bienvenido a tu panel de reservas</p>
+      {/* Hero Section - Colores suaves */}
+      <section className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
+        {/* Background gradient suave */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-600 to-slate-700"></div>
+        
+        {/* Decorative elements suaves */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-48 sm:w-72 h-48 sm:h-72 bg-white/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-64 sm:w-96 h-64 sm:h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-40 right-20 w-32 sm:w-48 h-32 sm:h-48 bg-teal-400/10 rounded-full blur-2xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-white">
+            {/* Badge superior */}
+            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-6 sm:mb-8 border border-white/20">
+              <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-amber-300 fill-current" />
+              Club Deportivo #1 en la Ciudad
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+              <span className="block">Vive el</span>
+              <span className="bg-gradient-to-r from-amber-300 to-orange-300 bg-clip-text text-transparent">
+                Deporte
+              </span>
+              <span className="block">como nunca antes</span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl md:text-2xl text-slate-100 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-4">
+              Canchas de nivel profesional, tecnología avanzada y una experiencia deportiva única. 
+              <strong className="text-white">Reserva online en segundos.</strong>
+            </p>
+
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-10 sm:mb-12 px-4">
+              <Button size="lg" className="bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg shadow-lg transition-colors">
+                <Link href="/auth/register" className="flex items-center justify-center w-full">
+                  Comenzar Gratis
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                </Link>
+              </Button>
+              
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mt-12 sm:mt-16">
+              {stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="flex justify-center text-white/70 mb-2">
+                    {stat.icon}
+                  </div>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">{stat.number}</div>
+                  <div className="text-xs sm:text-sm text-slate-200 font-medium">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Quick Actions - Botones apilados en móvil */}
-          <div className="space-y-3 sm:space-y-0 sm:flex sm:gap-4">
-            <Button asChild className="w-full sm:flex-1 sm:max-w-xs h-12">
-              <Link href="/reservas">
-                <Plus className="h-5 w-5 mr-2" />
-                Nueva Reserva
+      {/* Features Section - Colores suaves */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge variant="secondary" className="mb-4 px-3 py-1 bg-slate-100 text-slate-700">
+              ¿Por qué SportCenter?
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+              La experiencia deportiva
+              <span className="text-emerald-600"> definitiva</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+              Combinamos tecnología de vanguardia con instalaciones de primera clase para ofrecerte la mejor experiencia deportiva
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="group">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-lg border border-slate-100 text-center h-full transition-all duration-300 hover:scale-105">
+                  <div className={`${feature.color} w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 text-white group-hover:scale-105 transition-transform duration-300`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-slate-900">{feature.title}</h3>
+                  <p className="text-slate-600 leading-relaxed text-sm sm:text-base">{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Courts Section - Mejorado */}
+      <section id="canchas" className="py-16 sm:py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge variant="secondary" className="mb-4 px-3 py-1 bg-slate-100 text-slate-700">
+              Nuestras Instalaciones
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+              Canchas de
+              <span className="text-emerald-600"> nivel profesional</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+              Cada cancha está diseñada con los más altos estándares de calidad y equipada con tecnología de última generación
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {courts.map((court, index) => (
+              <Card key={index} className="group hover:scale-105 transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-white overflow-hidden">
+                <div className="relative">
+                  {/* Header con gradiente suave */}
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 sm:p-6 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                    <div className="relative z-10">
+                      <div className="text-3xl sm:text-5xl mb-3">{court.icon}</div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl sm:text-2xl font-bold mb-1">{court.name}</h3>
+                          <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs sm:text-sm">
+                            {court.count} cancha{court.count > 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl sm:text-3xl font-bold">${court.price}</div>
+                          <div className="text-xs sm:text-sm opacity-90">/hora</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <CardContent className="p-4 sm:p-6">
+                    <p className="text-slate-600 mb-4 leading-relaxed text-sm sm:text-base">{court.description}</p>
+                    
+                    <div className="space-y-2 mb-6">
+                      {court.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center text-xs sm:text-sm text-slate-700">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 flex-shrink-0"></div>
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 font-semibold py-2.5 sm:py-3 transition-colors">
+                      <Link href="/auth/register" className="flex items-center justify-center w-full">
+                        Reservar Ahora
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Colores suaves */}
+      <section className="py-16 sm:py-20 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-600 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-black/10"></div>
+          <div className="absolute top-20 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-white/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-64 sm:w-80 h-64 sm:h-80 bg-emerald-400/10 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+            ¿Listo para jugar al siguiente nivel?
+          </h2>
+          <p className="text-lg sm:text-xl mb-8 text-slate-100">
+            Únete a nuestra comunidad deportiva y disfruta de instalaciones premium con reservas online 24/7
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg transition-colors">
+              <Link href="/auth/register">
+                Registrarse Gratis
               </Link>
             </Button>
-            <Button variant="outline" asChild className="w-full sm:w-auto h-12">
-              <Link href="/reservas/mis-reservas">Ver Todas mis Reservas</Link>
-            </Button>
           </div>
         </div>
+      </section>
 
-        {/* Stats Cards - Grid responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Reservas Activas</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => r.status === 'ACTIVE').length}
-                  </p>
-                </div>
+      {/* Contact Info - Suave */}
+      <section className="py-12 sm:py-16 bg-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            <div className="text-center group">
+              <div className="bg-emerald-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-green-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Hoy</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => {
-                      const today = new Date().toISOString().split('T')[0]
-                      return r.date === today && r.status === 'ACTIVE'
-                    }).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Trophy className="h-8 w-8 text-yellow-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Esta Semana</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => {
-                      const reservationDate = new Date(r.date)
-                      const weekFromNow = new Date()
-                      weekFromNow.setDate(weekFromNow.getDate() + 7)
-                      return reservationDate <= weekFromNow && r.status === 'ACTIVE'
-                    }).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Próximas Reservas - Cards optimizadas para móvil */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Próximas Reservas</CardTitle>
-                <CardDescription className="text-sm">
-                  Tus reservas activas próximas
-                </CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/reservas/mis-reservas">Ver todas</Link>
-              </Button>
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Ubicación Premium</h4>
+              <p className="text-slate-300 text-sm sm:text-base">Av. Principal 123, Ciudad</p>
+              <p className="text-xs sm:text-sm text-slate-400 mt-2">Zona exclusiva y segura</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            {reservations.filter(r => r.status === 'ACTIVE').length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes reservas activas</h3>
-                <p className="text-gray-600 mb-4">¡Haz tu primera reserva y disfruta de nuestras canchas!</p>
-                <Button asChild>
-                  <Link href="/reservas">Hacer Reserva</Link>
-                </Button>
+            
+            <div className="text-center group">
+              <div className="bg-slate-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <Phone className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-            ) : (
-              <div className="space-y-3">
-                {reservations
-                  .filter(r => r.status === 'ACTIVE')
-                  .slice(0, 5)
-                  .map((reservation) => {
-                    const reservationDate = new Date(reservation.date)
-                    const today = new Date()
-                    const isToday = reservationDate.toDateString() === today.toDateString()
-                    const isTomorrow = reservationDate.toDateString() === new Date(today.getTime() + 24 * 60 * 60 * 1000).toDateString()
-                    
-                    let dateLabel = formatDate(reservationDate)
-                    if (isToday) dateLabel = 'Hoy'
-                    else if (isTomorrow) dateLabel = 'Mañana'
-                    
-                    return (
-                      <Card key={reservation.id} className={`border shadow-sm ${isToday ? 'bg-green-50 border-green-200' : ''}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="text-2xl flex-shrink-0">
-                              {getSportIcon(reservation.court.sport_type.name)}
-                            </div>
-                            
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold truncate">{reservation.court.name}</h3>
-                                <Badge variant="outline" className="text-xs flex-shrink-0">
-                                  {reservation.court.sport_type.name}
-                                </Badge>
-                                {isToday && (
-                                  <Badge className="bg-green-600 text-white text-xs">HOY</Badge>
-                                )}
-                              </div>
-                              
-                              <div className="space-y-1 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 flex-shrink-0" />
-                                  <span className="font-medium">
-                                    {dateLabel}
-                                    {!isToday && !isTomorrow && (
-                                      <span className="text-xs font-normal text-gray-500 ml-1">
-                                        ({reservationDate.toLocaleDateString('es-ES', { weekday: 'short' })})
-                                      </span>
-                                    )}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4 flex-shrink-0" />
-                                  <span>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex-shrink-0">
-                              {getStatusBadge(reservation.status)}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                  
-                {reservations.filter(r => r.status === 'ACTIVE').length > 5 && (
-                  <div className="text-center pt-4">
-                    <Button variant="outline" asChild>
-                      <Link href="/reservas/mis-reservas">Ver todas las reservas</Link>
-                    </Button>
-                  </div>
-                )}
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Atención 24/7</h4>
+              <p className="text-slate-300 text-sm sm:text-base">+1 (555) 123-4567</p>
+              <p className="text-xs sm:text-sm text-slate-400 mt-2">Soporte personalizado</p>
+            </div>
+            
+            <div className="text-center group">
+              <div className="bg-indigo-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-      
-      {/* Floating Action Button para móvil */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button asChild size="lg" className="rounded-full shadow-lg h-14 w-14 p-0">
-          <Link href="/reservas">
-            <Plus className="h-6 w-6" />
-          </Link>
-        </Button>
-      </div>
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Horarios Amplios</h4>
+              <div className="text-slate-300 space-y-1 text-sm sm:text-base">
+                <p>Lun-Vie: 7:00 - 21:00</p>
+                <p>Sáb: 9:00 - 14:00</p>
+                <p>Dom: 9:00 - 12:00</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer - Elegante */}
+      <footer className="bg-slate-900 text-white py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-400 mr-2 sm:mr-3" />
+              <div>
+                <span className="text-xl sm:text-2xl font-bold">SportCenter</span>
+                <div className="text-xs text-slate-400">CLUB DEPORTIVO PREMIUM</div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center space-x-6 sm:space-x-8 mb-6">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse delay-300"></div>
+              <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-700"></div>
+            </div>
+            
+            <p className="text-slate-400 mb-2 text-sm sm:text-base">© 2025 SportCenter. Todos los derechos reservados Kanek.</p>
+            <p className="text-xs sm:text-sm text-slate-500">Desarrollado con 💚 para los amantes del deporte</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
