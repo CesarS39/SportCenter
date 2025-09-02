@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { 
   Trophy, 
   ArrowLeft, 
@@ -27,7 +28,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Download,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  SlidersHorizontal
 } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -65,11 +68,12 @@ interface FilterState {
   searchTerm: string
 }
 
-export default function AdminReservasPage() {
+export default function AdminReservasPageMobile() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([])
   const [sportTypes, setSportTypes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',
     sportType: 'all',
@@ -77,7 +81,6 @@ export default function AdminReservasPage() {
     dateTo: undefined,
     searchTerm: ''
   })
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const router = useRouter()
 
   useEffect(() => {
@@ -278,7 +281,7 @@ export default function AdminReservasPage() {
     }
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
+      <Badge variant="outline" className={`${styles[status as keyof typeof styles]} text-xs px-1.5 py-0.5`}>
         {labels[status as keyof typeof labels]}
       </Badge>
     )
@@ -301,7 +304,6 @@ export default function AdminReservasPage() {
       dateTo: undefined,
       searchTerm: ''
     })
-    setSelectedDate(undefined)
   }
 
   // Estadísticas para las tabs
@@ -315,7 +317,7 @@ export default function AdminReservasPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4 animate-spin" />
           <p className="text-gray-600">Cargando gestión de reservas...</p>
@@ -326,334 +328,422 @@ export default function AdminReservasPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Button variant="ghost" asChild className="mr-4">
+      {/* Mobile Header - Optimizado */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="px-4 sm:px-6">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center min-w-0 flex-1">
+              <Button variant="ghost" asChild className="mr-2 p-2 h-auto">
                 <Link href="/admin">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Volver al Panel
+                  <ArrowLeft className="h-5 w-5" />
                 </Link>
               </Button>
-              <Trophy className="h-8 w-8 text-green-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Gestión de Reservas</h1>
+              <Trophy className="h-6 w-6 text-green-600 mr-2 flex-shrink-0" />
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                Reservas
+              </h1>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => loadData()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
+            
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => loadData()}>
+                <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
+              
+              {/* Filtros en Sheet para móvil */}
+              <Sheet open={showFilters} onOpenChange={setShowFilters}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filtros</SheetTitle>
+                    <SheetDescription>
+                      Ajusta los filtros para encontrar reservas específicas
+                    </SheetDescription>
+                  </SheetHeader>
+                  
+                  <div className="space-y-4 mt-6">
+                    {/* Búsqueda */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Buscar</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Usuario, cancha..."
+                          value={filters.searchTerm}
+                          onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Estado */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Estado</label>
+                      <Select
+                        value={filters.status}
+                        onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los estados</SelectItem>
+                          <SelectItem value="ACTIVE">Activas</SelectItem>
+                          <SelectItem value="COMPLETED">Completadas</SelectItem>
+                          <SelectItem value="CANCELLED">Canceladas</SelectItem>
+                          <SelectItem value="CANCELLED_ADMIN">Canceladas por Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Deporte */}
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Deporte</label>
+                      <Select
+                        value={filters.sportType}
+                        onValueChange={(value) => setFilters(prev => ({ ...prev, sportType: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Deporte" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los deportes</SelectItem>
+                          {sportTypes.map((sport) => (
+                            <SelectItem key={sport.id} value={sport.name}>
+                              {sport.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <Button variant="outline" onClick={clearFilters} className="flex-1">
+                        Limpiar
+                      </Button>
+                      <Button onClick={() => setShowFilters(false)} className="flex-1">
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros y Búsqueda
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {/* Búsqueda */}
-              <div className="lg:col-span-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Buscar usuario, cancha..."
-                    value={filters.searchTerm}
-                    onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                    className="pl-10"
-                  />
-                </div>
+      <main className="px-4 sm:px-6 py-4 max-w-7xl mx-auto">
+        {/* Stats Cards - Layout móvil optimizado */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-6">
+          <Card className="p-3">
+            <div className="flex items-center">
+              <CalendarIcon className="h-6 w-6 text-blue-600 flex-shrink-0" />
+              <div className="ml-2 min-w-0">
+                <p className="text-xs font-medium text-gray-600 truncate">Total</p>
+                <p className="text-lg font-bold text-gray-900">{filteredReservations.length}</p>
               </div>
-
-              {/* Estado */}
-              <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="ACTIVE">Activas</SelectItem>
-                  <SelectItem value="COMPLETED">Completadas</SelectItem>
-                  <SelectItem value="CANCELLED">Canceladas</SelectItem>
-                  <SelectItem value="CANCELLED_ADMIN">Canceladas por Admin</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Deporte */}
-              <Select
-                value={filters.sportType}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, sportType: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Deporte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los deportes</SelectItem>
-                  {sportTypes.map((sport) => (
-                    <SelectItem key={sport.id} value={sport.name}>
-                      {sport.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Fecha desde */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateFrom ? format(filters.dateFrom, "dd/MM/yyyy", { locale: es }) : "Desde"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={filters.dateFrom}
-                    onSelect={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                  />
-                </PopoverContent>
-              </Popover>
-
-              {/* Botón limpiar filtros */}
-              <Button variant="outline" onClick={clearFilters}>
-                Limpiar
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CalendarIcon className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Reservas</p>
-                  <p className="text-2xl font-bold text-gray-900">{filteredReservations.length}</p>
-                </div>
-              </div>
-            </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Activas</p>
-                  <p className="text-2xl font-bold text-gray-900">{activeReservations.length}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center">
+              <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
+              <div className="ml-2 min-w-0">
+                <p className="text-xs font-medium text-gray-600 truncate">Activas</p>
+                <p className="text-lg font-bold text-gray-900">{activeReservations.length}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Hoy</p>
-                  <p className="text-2xl font-bold text-gray-900">{todayReservations.length}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center">
+              <Clock className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+              <div className="ml-2 min-w-0">
+                <p className="text-xs font-medium text-gray-600 truncate">Hoy</p>
+                <p className="text-lg font-bold text-gray-900">{todayReservations.length}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <AlertTriangle className="h-8 w-8 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Canceladas</p>
-                  <p className="text-2xl font-bold text-gray-900">{cancelledReservations.length}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center">
+              <AlertTriangle className="h-6 w-6 text-red-600 flex-shrink-0" />
+              <div className="ml-2 min-w-0">
+                <p className="text-xs font-medium text-gray-600 truncate">Canceladas</p>
+                <p className="text-lg font-bold text-gray-900">{cancelledReservations.length}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </div>
 
-        {/* Reservations Tabs */}
+        {/* Reservations List - Formato de tarjetas móviles */}
         <Card>
           <CardContent className="p-0">
-            <Tabs defaultValue="all" className="w-full">
-              <div className="border-b p-6">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="all">Todas ({filteredReservations.length})</TabsTrigger>
-                  <TabsTrigger value="active">Activas ({activeReservations.length})</TabsTrigger>
-                  <TabsTrigger value="today">Hoy ({todayReservations.length})</TabsTrigger>
-                  <TabsTrigger value="completed">Completadas ({completedReservations.length})</TabsTrigger>
-                  <TabsTrigger value="cancelled">Canceladas ({cancelledReservations.length})</TabsTrigger>
+            <div className="p-4 border-b">
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 h-9 text-xs">
+                  <TabsTrigger value="all" className="text-xs px-2">
+                    Todas ({filteredReservations.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="active" className="text-xs px-2">
+                    Activas ({activeReservations.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="today" className="text-xs px-2">
+                    Hoy ({todayReservations.length})
+                  </TabsTrigger>
                 </TabsList>
-              </div>
+                
+                {/* Lista de reservas optimizada para móvil */}
+                <TabsContent value="all" className="mt-4">
+                  <div className="space-y-3">
+                    {filteredReservations.length === 0 ? (
+                      <div className="text-center py-12">
+                        <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron reservas</h3>
+                        <p className="text-gray-600">Ajusta los filtros para ver más resultados</p>
+                      </div>
+                    ) : (
+                      filteredReservations.map((reservation) => (
+                        <Card key={reservation.id} className="border shadow-sm">
+                          <CardContent className="p-4">
+                            {/* Header con deporte e info principal */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="text-2xl flex-shrink-0">
+                                  {getSportIcon(reservation.court.sport_type.name)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-semibold text-base truncate">
+                                      {reservation.court.name}
+                                    </h3>
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      {reservation.court.sport_type.name}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 truncate">
+                                    {reservation.user.name}
+                                  </p>
+                                </div>
+                              </div>
+                              {getStatusBadge(reservation.status, reservation.penalty_applied)}
+                            </div>
 
-              {/* Todas las reservas */}
-              <TabsContent value="all" className="p-6">
-                <div className="space-y-4">
-                  {filteredReservations.length === 0 ? (
-                    <div className="text-center py-8">
-                      <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron reservas</h3>
-                      <p className="text-gray-600">Ajusta los filtros para ver más resultados</p>
-                    </div>
-                  ) : (
-                    filteredReservations.map((reservation) => (
-                      <Card key={reservation.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="text-3xl">
-                                {getSportIcon(reservation.court.sport_type.name)}
+                            {/* Información de fecha y hora */}
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                              <div className="flex items-center gap-1">
+                                <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">{formatDate(new Date(reservation.date))}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4 flex-shrink-0" />
+                                <span>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</span>
+                              </div>
+                            </div>
+
+                            {/* Información adicional en móvil */}
+                            <div className="text-xs text-gray-500 mb-3 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                <span>{reservation.user.phone || 'Sin teléfono'}</span>
                               </div>
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-lg">{reservation.court.name}</h3>
-                                  <Badge variant="outline">{reservation.court.sport_type.name}</Badge>
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-gray-600">
-                                  <div className="flex items-center gap-1">
-                                    <User className="h-4 w-4" />
-                                    {reservation.user.name}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="h-4 w-4" />
-                                    {reservation.user.phone || 'Sin teléfono'}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <CalendarIcon className="h-4 w-4" />
-                                    {formatDate(new Date(reservation.date))}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-4 w-4" />
-                                    {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
-                                  </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Precio: ${reservation.court.price_per_hour} • Creada: {new Date(reservation.created_at).toLocaleDateString('es-ES')}
-                                </p>
+                                Precio: ${reservation.court.price_per_hour} • 
+                                Creada: {new Date(reservation.created_at).toLocaleDateString('es-ES')}
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-3">
-                              {getStatusBadge(reservation.status, reservation.penalty_applied)}
-                              
-                              {reservation.status === 'ACTIVE' && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleCompleteReservation(reservation.id, reservation)}
-                                    className="text-blue-600 hover:text-blue-700"
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Completar
-                                  </Button>
-                                  
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-red-600 hover:text-red-700"
+                            {/* Botones de acción */}
+                            {reservation.status === 'ACTIVE' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCompleteReservation(reservation.id, reservation)}
+                                  className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Completar
+                                </Button>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 flex-1 h-8 text-xs"
+                                    >
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Cancelar
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="mx-4">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Cancelar reserva?</AlertDialogTitle>
+                                      <AlertDialogDescription className="text-sm">
+                                        Se cancelará la reserva de <strong>{reservation.user.name}</strong> para{' '}
+                                        <strong>{reservation.court.name}</strong> el{' '}
+                                        <strong>{formatDate(new Date(reservation.date))}</strong>.
+                                        <br /><br />
+                                        <strong>No se aplicará penalización</strong> al usuario.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="flex-col gap-2">
+                                      <AlertDialogCancel className="w-full">Mantener reserva</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleCancelReservation(reservation.id, reservation)}
+                                        className="bg-red-600 hover:bg-red-700 w-full"
                                       >
-                                        <XCircle className="h-4 w-4 mr-1" />
-                                        Cancelar
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Cancelar reserva?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Se cancelará la reserva de <strong>{reservation.user.name}</strong> para{' '}
-                                          <strong>{reservation.court.name}</strong> el{' '}
-                                          <strong>{formatDate(new Date(reservation.date))}</strong> de{' '}
-                                          <strong>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</strong>.
-                                          <br /><br />
-                                          <strong>No se aplicará penalización</strong> al usuario.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Mantener reserva</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleCancelReservation(reservation.id, reservation)}
-                                          className="bg-red-600 hover:bg-red-700"
-                                        >
-                                          Cancelar reserva
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </TabsContent>
+                                        Cancelar reserva
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
 
-              {/* Otros tabs con filtros automáticos */}
-              <TabsContent value="active" className="p-6">
-                <div className="space-y-4">
-                  {activeReservations.map((reservation) => (
-                    <Card key={reservation.id} className="hover:shadow-md transition-shadow">
-                      {/* Same content as above but filtered */}
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="text-3xl">
-                              {getSportIcon(reservation.court.sport_type.name)}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-lg">{reservation.court.name}</h3>
-                                <Badge variant="outline">{reservation.court.sport_type.name}</Badge>
+                <TabsContent value="active" className="mt-4">
+                  <div className="space-y-3">
+                    {activeReservations.map((reservation) => (
+                      <Card key={reservation.id} className="border shadow-sm">
+                        <CardContent className="p-4">
+                          {/* Mismo formato que arriba pero solo para activas */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="text-2xl flex-shrink-0">
+                                {getSportIcon(reservation.court.sport_type.name)}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-4 w-4" />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-base truncate">
+                                    {reservation.court.name}
+                                  </h3>
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {reservation.court.sport_type.name}
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-gray-600 truncate">
                                   {reservation.user.name}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <CalendarIcon className="h-4 w-4" />
-                                  {formatDate(new Date(reservation.date))}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
-                                </div>
+                                </p>
                               </div>
+                            </div>
+                            {getStatusBadge(reservation.status, reservation.penalty_applied)}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">{formatDate(new Date(reservation.date))}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4 flex-shrink-0" />
+                              <span>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</span>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-3">
-                            {getStatusBadge(reservation.status, reservation.penalty_applied)}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCompleteReservation(reservation.id, reservation)}
+                              className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completar
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 flex-1 h-8 text-xs"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Cancelar
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="mx-4">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Cancelar reserva?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Se cancelará la reserva sin penalización para el usuario.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="flex-col gap-2">
+                                  <AlertDialogCancel className="w-full">Mantener</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleCancelReservation(reservation.id, reservation)}
+                                    className="bg-red-600 hover:bg-red-700 w-full"
+                                  >
+                                    Cancelar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="today" className="mt-4">
+                  <div className="space-y-3">
+                    {todayReservations.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No hay reservas para hoy</h3>
+                        <p className="text-gray-600">Las reservas de hoy aparecerán aquí</p>
+                      </div>
+                    ) : (
+                      todayReservations.map((reservation) => (
+                        <Card key={reservation.id} className="border shadow-sm bg-yellow-50">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="text-2xl flex-shrink-0">
+                                  {getSportIcon(reservation.court.sport_type.name)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-semibold text-base truncate">
+                                      {reservation.court.name}
+                                    </h3>
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      {reservation.court.sport_type.name}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-600 truncate">
+                                    {reservation.user.name}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge className="bg-yellow-500 text-white">HOY</Badge>
+                            </div>
+
+                            <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+                              <Clock className="h-4 w-4 flex-shrink-0" />
+                              <span>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</span>
+                            </div>
+                            
                             <div className="flex gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleCompleteReservation(reservation.id, reservation)}
-                                className="text-blue-600 hover:text-blue-700"
+                                className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
                               >
-                                <CheckCircle className="h-4 w-4 mr-1" />
+                                <CheckCircle className="h-3 w-3 mr-1" />
                                 Completar
                               </Button>
                               <AlertDialog>
@@ -661,24 +751,24 @@ export default function AdminReservasPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="text-red-600 hover:text-red-700"
+                                    className="text-red-600 hover:text-red-700 flex-1 h-8 text-xs"
                                   >
-                                    <XCircle className="h-4 w-4 mr-1" />
+                                    <XCircle className="h-3 w-3 mr-1" />
                                     Cancelar
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="mx-4">
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Cancelar reserva?</AlertDialogTitle>
+                                    <AlertDialogTitle>¿Cancelar reserva de hoy?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Se cancelará la reserva sin penalización para el usuario.
+                                      Se cancelará la reserva de hoy sin penalización para el usuario.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Mantener</AlertDialogCancel>
+                                  <AlertDialogFooter className="flex-col gap-2">
+                                    <AlertDialogCancel className="w-full">Mantener</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => handleCancelReservation(reservation.id, reservation)}
-                                      className="bg-red-600 hover:bg-red-700"
+                                      className="bg-red-600 hover:bg-red-700 w-full"
                                     >
                                       Cancelar
                                     </AlertDialogAction>
@@ -686,39 +776,14 @@ export default function AdminReservasPage() {
                                 </AlertDialogContent>
                               </AlertDialog>
                             </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              {/* Similar structure for other tabs... */}
-              <TabsContent value="today" className="p-6">
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Reservas de hoy: {todayReservations.length}</h3>
-                  <p className="text-gray-600">Vista detallada en desarrollo</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="completed" className="p-6">
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Reservas completadas: {completedReservations.length}</h3>
-                  <p className="text-gray-600">Vista detallada en desarrollo</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="cancelled" className="p-6">
-                <div className="text-center py-8">
-                  <XCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Reservas canceladas: {cancelledReservations.length}</h3>
-                  <p className="text-gray-600">Vista detallada en desarrollo</p>
-                </div>
-              </TabsContent>
-            </Tabs>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </CardContent>
         </Card>
       </main>

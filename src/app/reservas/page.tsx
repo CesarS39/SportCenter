@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -11,7 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Trophy, ArrowLeft, Calendar as CalendarIcon, Clock, Users, DollarSign, ChevronDown, ChevronRight } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Trophy, ArrowLeft, Calendar as CalendarIcon, Clock, Users, DollarSign, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { formatDate, getOperatingHours, generateTimeSlots, isOperatingDay } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -36,7 +36,7 @@ interface Reservation {
   court_id: string
 }
 
-export default function ReservasPage() {
+export default function ReservasPageMobile() {
   const [courts, setCourts] = useState<Court[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null)
@@ -47,6 +47,7 @@ export default function ReservasPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [openSportTypes, setOpenSportTypes] = useState<string[]>([])
+  const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
 
   useEffect(() => {
@@ -151,10 +152,10 @@ export default function ReservasPage() {
   }
 
   const canSelectTimeSlot = (slot: string): boolean => {
-    if (!selectedDate) return false
-
-    const operatingHours = getOperatingHours(selectedDate)
-    const allSlots = generateTimeSlots(operatingHours.start, operatingHours.end)
+    const allSlots = generateTimeSlots(
+      getOperatingHours(selectedDate!).start,
+      getOperatingHours(selectedDate!).end
+    )
     
     const slotIndex = allSlots.indexOf(slot)
     if (slotIndex === -1) return false
@@ -194,6 +195,20 @@ export default function ReservasPage() {
     acc[sportTypeId].courts.push(court)
     return acc
   }, {} as Record<string, { sport_type: any, courts: Court[] }>)
+
+  const handleCourtSelection = (court: Court) => {
+    setSelectedCourt(court)
+    setCurrentStep(2)
+    setSelectedTimeSlot(null)
+  }
+
+  const handleDateSelection = (date: Date | undefined) => {
+    setSelectedDate(date)
+    setSelectedTimeSlot(null)
+    if (date) {
+      setCurrentStep(3)
+    }
+  }
 
   const handleReservation = async () => {
     if (!user || !selectedCourt || !selectedTimeSlot || !selectedDate) {
@@ -283,9 +298,10 @@ export default function ReservasPage() {
       })
     }
   }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4 animate-spin" />
           <p className="text-gray-600">Cargando canchas...</p>
@@ -296,255 +312,369 @@ export default function ReservasPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Button variant="ghost" asChild className="mr-4">
+      {/* Mobile Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="px-4 sm:px-6">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center min-w-0 flex-1">
+              <Button variant="ghost" asChild className="mr-2 p-2 h-auto">
                 <Link href="/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Volver
+                  <ArrowLeft className="h-5 w-5" />
                 </Link>
               </Button>
-              <Trophy className="h-8 w-8 text-green-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Hacer Reserva</h1>
+              <Trophy className="h-6 w-6 text-green-600 mr-2 flex-shrink-0" />
+              <h1 className="text-lg font-bold text-gray-900">Hacer Reserva</h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Paso 1: Seleccionar Cancha */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
-                Seleccionar Cancha
-              </CardTitle>
-              <CardDescription>
-                Elige la cancha que deseas reservar
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(courtsBySport).map(([sportTypeId, { sport_type, courts }]) => (
-                <Collapsible 
-                  key={sportTypeId}
-                  open={openSportTypes.includes(sportTypeId)}
-                  onOpenChange={() => toggleSportType(sportTypeId)}
-                >
-                  <CollapsibleTrigger asChild>
-                    <Card className="cursor-pointer hover:shadow-md transition-all">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-2xl">
-                              {sport_type.name === 'Tenis' && '🎾'}
-                              {sport_type.name === 'Pádel' && '🏓'}
-                              {sport_type.name === 'Fútbol' && '⚽'}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold">{sport_type.name}</h3>
-                              <p className="text-sm text-gray-600">{courts.length} cancha{courts.length !== 1 ? 's' : ''} disponible{courts.length !== 1 ? 's' : ''}</p>
-                            </div>
-                          </div>
-                          {openSportTypes.includes(sportTypeId) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-2 mt-2">
-                    {courts.map((court) => (
-                      <Card 
-                        key={court.id} 
-                        className={`cursor-pointer transition-all hover:shadow-md ml-4 ${
-                          selectedCourt?.id === court.id ? 'ring-2 ring-green-500' : ''
-                        }`}
-                        onClick={() => setSelectedCourt(court)}
-                      >
+      {/* Progress Indicator */}
+      <div className="bg-white border-b px-4 py-3">
+        <div className="flex items-center justify-center space-x-4">
+          <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-green-600' : 'text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+              {selectedCourt ? <CheckCircle2 className="w-4 h-4" /> : '1'}
+            </div>
+            <span className="text-sm font-medium hidden sm:block">Cancha</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-200"></div>
+          <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+              {selectedDate ? <CheckCircle2 className="w-4 h-4" /> : '2'}
+            </div>
+            <span className="text-sm font-medium hidden sm:block">Fecha</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-200"></div>
+          <div className={`flex items-center gap-2 ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 3 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+              {selectedTimeSlot ? <CheckCircle2 className="w-4 h-4" /> : '3'}
+            </div>
+            <span className="text-sm font-medium hidden sm:block">Horario</span>
+          </div>
+        </div>
+      </div>
+
+      <main className="px-4 sm:px-6 py-6 max-w-4xl mx-auto">
+        <Tabs value={`step-${currentStep}`} className="w-full">
+          <TabsContent value="step-1">
+            {/* Paso 1: Seleccionar Cancha */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">1</span>
+                  Seleccionar Cancha
+                </CardTitle>
+                <CardDescription>
+                  Elige la cancha que deseas reservar
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(courtsBySport).map(([sportTypeId, { sport_type, courts }]) => (
+                  <Collapsible 
+                    key={sportTypeId}
+                    open={openSportTypes.includes(sportTypeId)}
+                    onOpenChange={() => toggleSportType(sportTypeId)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Card className="cursor-pointer hover:shadow-md transition-all">
                         <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-medium">{court.name}</h4>
-                            {selectedCourt?.id === court.id && (
-                              <Badge className="bg-green-600">Seleccionada</Badge>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">
+                                {sport_type.name === 'Tenis' && '🎾'}
+                                {sport_type.name === 'Pádel' && '🏓'}
+                                {sport_type.name === 'Fútbol' && '⚽'}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{sport_type.name}</h3>
+                                <p className="text-sm text-gray-600">{courts.length} cancha{courts.length !== 1 ? 's' : ''} disponible{courts.length !== 1 ? 's' : ''}</p>
+                              </div>
+                            </div>
+                            {openSportTypes.includes(sportTypeId) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
                             )}
-                          </div>
-                          <div className="space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4" />
-                              ${court.price_per_hour}/hora
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              Hasta {court.max_people} personas
-                            </div>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-            </CardContent>
-          </Card>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-3 mt-3">
+                      {courts.map((court) => (
+                        <Card 
+                          key={court.id} 
+                          className={`cursor-pointer transition-all hover:shadow-md ml-4 ${
+                            selectedCourt?.id === court.id ? 'ring-2 ring-green-500 bg-green-50' : ''
+                          }`}
+                          onClick={() => handleCourtSelection(court)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-medium">{court.name}</h4>
+                              {selectedCourt?.id === court.id && (
+                                <Badge className="bg-green-600">Seleccionada</Badge>
+                              )}
+                            </div>
+                            <div className="space-y-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <DollarSign className="h-4 w-4" />
+                                ${court.price_per_hour}/hora
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Hasta {court.max_people} personas
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Paso 2: Seleccionar Fecha */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className={`${selectedCourt ? 'bg-green-600' : 'bg-gray-400'} text-white rounded-full w-6 h-6 flex items-center justify-center text-sm`}>2</span>
-                Seleccionar Fecha
-              </CardTitle>
-              <CardDescription>
-                Elige el día para tu reserva
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {selectedCourt ? (
-                <div className="space-y-4">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      setSelectedDate(date)
-                      setSelectedTimeSlot(null) // Reset tiempo al cambiar fecha
-                    }}
-                    disabled={(date) => {
-                      const today = new Date()
-                      const tomorrow = new Date()
-                      tomorrow.setDate(today.getDate() + 1)
-                      
-                      return (
-                        date < tomorrow || // Mínimo mañana
-                        !isOperatingDay(date) // Solo días operativos
-                      )
-                    }}
-                    className="rounded-md border"
-                  />
+          <TabsContent value="step-2">
+            {/* Paso 2: Seleccionar Fecha */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">2</span>
+                      Seleccionar Fecha
+                    </CardTitle>
+                    <CardDescription>
+                      Elige el día para tu reserva
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(1)}>
+                    Cambiar cancha
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {selectedCourt && (
+                  <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">
+                        {selectedCourt.sport_type.name === 'Tenis' && '🎾'}
+                        {selectedCourt.sport_type.name === 'Pádel' && '🏓'}
+                        {selectedCourt.sport_type.name === 'Fútbol' && '⚽'}
+                      </span>
+                      <div>
+                        <p className="font-medium text-green-800">{selectedCourt.name}</p>
+                        <p className="text-sm text-green-600">${selectedCourt.price_per_hour}/hora</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div className="flex justify-center">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelection}
+                      disabled={(date) => {
+                        const today = new Date()
+                        const tomorrow = new Date()
+                        tomorrow.setDate(today.getDate() + 1)
+                        
+                        return (
+                          date < tomorrow || // Mínimo mañana
+                          !isOperatingDay(date) // Solo días operativos
+                        )
+                      }}
+                      className="rounded-md border shadow-sm bg-white mx-auto"
+                      classNames={{
+                        months: "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 justify-center",
+                        month: "space-y-4 w-full flex flex-col",
+                        table: "w-full border-collapse space-y-1",
+                        head_row: "",
+                        head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem] flex-1 text-center",
+                        row: "flex w-full mt-2",
+                        cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
+                        day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 mx-auto rounded-md hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                        day_today: "bg-accent text-accent-foreground",
+                        day_outside: "day-outside text-muted-foreground opacity-50  aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                        day_disabled: "text-muted-foreground opacity-50",
+                        day_hidden: "invisible",
+                      }}
+                    />
+                  </div>
+
                   {!selectedDate && (
-                    <Alert>
+                    <Alert className="mx-4">
                       <CalendarIcon className="h-4 w-4" />
                       <AlertDescription>
-                        Selecciona una fecha para continuar con tu reserva.
+                        Selecciona una fecha para continuar con tu reserva. Solo puedes reservar con 24 horas de anticipación.
                       </AlertDescription>
                     </Alert>
                   )}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  Primero selecciona una cancha
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Paso 3: Seleccionar Horario */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className={`${selectedCourt && selectedDate ? 'bg-green-600' : 'bg-gray-400'} text-white rounded-full w-6 h-6 flex items-center justify-center text-sm`}>3</span>
-                Seleccionar Horario
-              </CardTitle>
-              <CardDescription>
-                Elige la hora y duración
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedCourt && selectedDate ? (
-                <>
-                  {/* Seleccionar duración */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Duración</label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={duration === 1 ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setDuration(1)
-                          setSelectedTimeSlot(null) // Reset selección de hora
-                        }}
-                      >
-                        1 hora
-                      </Button>
-                      <Button
-                        variant={duration === 2 ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setDuration(2)
-                          setSelectedTimeSlot(null) // Reset selección de hora
-                        }}
-                      >
-                        2 horas
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Horarios disponibles */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Horarios Disponibles</label>
-                    {availableSlots.length === 0 ? (
-                      <Alert>
-                        <CalendarIcon className="h-4 w-4" />
-                        <AlertDescription>
-                          No hay horarios disponibles para esta fecha.
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {availableSlots.map((slot) => (
-                          <Button
-                            key={slot}
-                            variant={selectedTimeSlot === slot ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSelectedTimeSlot(slot)}
-                            disabled={!canSelectTimeSlot(slot)}
-                            className="text-xs"
-                          >
-                            <Clock className="h-3 w-3 mr-1" />
-                            {slot}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Resumen y confirmación */}
-                  {selectedTimeSlot && (
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-2">Resumen de Reserva</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p><strong>Cancha:</strong> {selectedCourt.name}</p>
-                        <p><strong>Fecha:</strong> {formatDate(selectedDate)}</p>
-                        <p><strong>Hora:</strong> {selectedTimeSlot} - {
-                          (() => {
-                            const startHour = parseInt(selectedTimeSlot.split(':')[0])
-                            const startMinute = parseInt(selectedTimeSlot.split(':')[1])
-                            const endHour = startHour + duration
-                            return `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`
-                          })()
-                        }</p>
-                        <p><strong>Duración:</strong> {duration} hora{duration > 1 ? 's' : ''}</p>
-                        <p><strong>Precio:</strong> ${selectedCourt.price_per_hour * duration}</p>
-                      </div>
-                      <Button className="w-full mt-4" onClick={handleReservation}>
-                        Confirmar Reserva
-                      </Button>
+                  {selectedDate && (
+                    <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm font-medium text-blue-800">
+                        Fecha seleccionada: {formatDate(selectedDate)}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Continuemos con la selección de horario
+                      </p>
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  Selecciona cancha y fecha primero
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="step-3">
+            {/* Paso 3: Seleccionar Horario */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">3</span>
+                      Seleccionar Horario
+                    </CardTitle>
+                    <CardDescription>
+                      Elige la hora y duración
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)}>
+                    Cambiar fecha
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {selectedCourt && selectedDate && (
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">
+                        {selectedCourt.sport_type.name === 'Tenis' && '🎾'}
+                        {selectedCourt.sport_type.name === 'Pádel' && '🏓'}
+                        {selectedCourt.sport_type.name === 'Fútbol' && '⚽'}
+                      </span>
+                      <div>
+                        <p className="font-medium text-green-800">{selectedCourt.name}</p>
+                        <p className="text-sm text-green-600">{formatDate(selectedDate)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Seleccionar duración */}
+                <div>
+                  <label className="text-sm font-medium mb-3 block">Duración</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant={duration === 1 ? "default" : "outline"}
+                      onClick={() => {
+                        setDuration(1)
+                        setSelectedTimeSlot(null) // Reset selección de hora
+                      }}
+                      className="h-12"
+                    >
+                      1 hora
+                      <div className="text-xs text-muted-foreground ml-2">
+                        ${selectedCourt?.price_per_hour}
+                      </div>
+                    </Button>
+                    <Button
+                      variant={duration === 2 ? "default" : "outline"}
+                      onClick={() => {
+                        setDuration(2)
+                        setSelectedTimeSlot(null) // Reset selección de hora
+                      }}
+                      className="h-12"
+                    >
+                      2 horas
+                      <div className="text-xs text-muted-foreground ml-2">
+                        ${selectedCourt ? selectedCourt.price_per_hour * 2 : 0}
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Horarios disponibles */}
+                <div>
+                  <label className="text-sm font-medium mb-3 block">Horarios Disponibles</label>
+                  {availableSlots.length === 0 ? (
+                    <Alert>
+                      <CalendarIcon className="h-4 w-4" />
+                      <AlertDescription>
+                        No hay horarios disponibles para esta fecha.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {availableSlots.map((slot) => (
+                        <Button
+                          key={slot}
+                          variant={selectedTimeSlot === slot ? "default" : "outline"}
+                          onClick={() => setSelectedTimeSlot(slot)}
+                          disabled={!canSelectTimeSlot(slot)}
+                          className="h-12 text-sm"
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          {slot}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Resumen y confirmación */}
+                {selectedTimeSlot && (
+                  <Card className="border-green-200 bg-green-50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Resumen de Reserva</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-1 gap-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">Cancha:</span>
+                          <span>{selectedCourt?.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Fecha:</span>
+                          <span>{formatDate(selectedDate!)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Hora:</span>
+                          <span>{selectedTimeSlot} - {
+                            (() => {
+                              const startHour = parseInt(selectedTimeSlot.split(':')[0])
+                              const startMinute = parseInt(selectedTimeSlot.split(':')[1])
+                              const endHour = startHour + duration
+                              return `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`
+                            })()
+                          }</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium">Duración:</span>
+                          <span>{duration} hora{duration > 1 ? 's' : ''}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold text-lg border-t pt-3">
+                          <span>Total:</span>
+                          <span className="text-green-600">${(selectedCourt?.price_per_hour || 0) * duration}</span>
+                        </div>
+                      </div>
+                      
+                      <Button className="w-full h-12 text-lg" onClick={handleReservation}>
+                        Confirmar Reserva
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )
