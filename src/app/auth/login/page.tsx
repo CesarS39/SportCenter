@@ -161,11 +161,6 @@ export default function LoginPage() {
             </div>
 
             {/* Demo credentials */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-md">
-              <p className="text-xs text-gray-500 mb-2">Credenciales de prueba:</p>
-              <p className="text-xs text-gray-600">Admin: admin@test.com / admin123</p>
-              <p className="text-xs text-gray-600">Usuario: user@test.com / user123</p>
-            </div>
           </CardContent>
         </Card>
 
