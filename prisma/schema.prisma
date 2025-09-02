@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model SportType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  maxPeople   Int      @map("max_people")
+  createdAt   DateTime @default(now()) @map("created_at")
+  courts      Court[]
+
+  @@map("sport_types")
+}
+
+model Court {
+  id           String        @id @default(cuid())
+  name         String
+  sportTypeId  String        @map("sport_type_id")
+  pricePerHour Float         @map("price_per_hour")
+  maxPeople    Int           @map("max_people")
+  imageUrl     String?       @map("image_url")
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  sportType    SportType     @relation(fields: [sportTypeId], references: [id])
+  reservations Reservation[]
+
+  @@map("courts")
+}
+
+model UserProfile {
+  userId       String        @unique @map("user_id")
+  name         String
+  phone        String?
+  role         UserRole      @default(USER)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservations Reservation[]
+
+  @@map("user_profiles")
+}
+
+model Reservation {
+  id             String            @id @default(cuid())
+  userId         String            @map("user_id")
+  courtId        String            @map("court_id")
+  date           DateTime          @db.Date
+  startTime      DateTime          @map("start_time") @db.Time(6)
+  endTime        DateTime          @map("end_time") @db.Time(6)
+  status         ReservationStatus @default(ACTIVE)
+  penaltyApplied Boolean           @default(false) @map("penalty_applied")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  court          Court             @relation(fields: [courtId], references: [id])
+  user           UserProfile       @relation(fields: [userId], references: [userId])
+
+  @@map("reservations")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CANCELLED
+  CANCELLED_ADMIN
+  COMPLETED
+}
