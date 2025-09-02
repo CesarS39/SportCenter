@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -37,7 +38,7 @@ interface Reservation {
 
 export default function ReservasPage() {
   const [courts, setCourts] = useState<Court[]>([])
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined) // Cambiar a undefined
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [existingReservations, setExistingReservations] = useState<Reservation[]>([])
@@ -150,10 +151,10 @@ export default function ReservasPage() {
   }
 
   const canSelectTimeSlot = (slot: string): boolean => {
-    const allSlots = generateTimeSlots(
-      getOperatingHours(selectedDate).start,
-      getOperatingHours(selectedDate).end
-    )
+    if (!selectedDate) return false
+
+    const operatingHours = getOperatingHours(selectedDate)
+    const allSlots = generateTimeSlots(operatingHours.start, operatingHours.end)
     
     const slotIndex = allSlots.indexOf(slot)
     if (slotIndex === -1) return false
@@ -282,7 +283,6 @@ export default function ReservasPage() {
       })
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

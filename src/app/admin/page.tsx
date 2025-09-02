@@ -155,7 +155,7 @@ export default function AdminDashboard() {
         .eq('date', today)
         .eq('status', 'ACTIVE')
 
-      // Calcular ingresos (reservas completadas)
+      // Calcular ingresos (reservas completadas) - CORREGIDO
       const { data: completedReservations } = await supabase
         .from('reservations')
         .select(`
@@ -167,7 +167,12 @@ export default function AdminDashboard() {
         .eq('status', 'COMPLETED')
 
       const revenue = completedReservations?.reduce((total, reservation) => {
-        return total + (reservation.court?.price_per_hour || 0)
+        // Verificar que court existe y tiene price_per_hour
+        if (reservation.court && typeof reservation.court === 'object' && 'price_per_hour' in reservation.court) {
+          const court = reservation.court as { price_per_hour: number }
+          return total + (court.price_per_hour || 0)
+        }
+        return total
       }, 0) || 0
 
       setStats({
@@ -358,7 +363,7 @@ export default function AdminDashboard() {
             </Avatar>
             <div>
               <h2 className="text-3xl font-bold text-gray-900">
-                ¡Hola, {profile?.name || 'Administrador'}! 👨‍💼
+                ¡Hola, {profile?.name || 'Administrador'}!
               </h2>
               <p className="text-gray-600">Bienvenido al panel de administración</p>
             </div>
