@@ -1,19 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAuth } from '@/lib/hooks/use-require-auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Trophy, ArrowLeft, Calendar as CalendarIcon, Clock, Users, DollarSign, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { formatDate, getOperatingHours, generateTimeSlots, isOperatingDay } from '@/lib/utils'
 import { toast } from 'sonner'
+
+interface SportType {
+  id: string
+  name: string
+  description: string | null
+}
 
 interface Court {
   id: string
@@ -22,11 +30,7 @@ interface Court {
   max_people: number
   image_url: string | null
   active: boolean
-  sport_type: {
-    id: string
-    name: string
-    description: string | null
-  }
+  sport_type: SportType
 }
 
 interface Reservation {
@@ -37,41 +41,20 @@ interface Reservation {
 }
 
 export default function ReservasPageMobile() {
-  const [courts, setCourts] = useState<Court[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null)
-  const [availableSlots, setAvailableSlots] = useState<string[]>([])
-  const [existingReservations, setExistingReservations] = useState<Reservation[]>([])
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null)
   const [duration, setDuration] = useState<number>(1) // 1 o 2 horas
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [openSportTypes, setOpenSportTypes] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const { user, isLoading: isUserLoading } = useRequireAuth()
 
-  useEffect(() => {
-    loadInitialData()
-  }, [])
-
-  useEffect(() => {
-    if (selectedCourt && selectedDate) {
-      loadAvailableSlots()
-    }
-  }, [selectedCourt, selectedDate])
-
-  const loadInitialData = async () => {
-    try {
-      // Verificar usuario
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-      setUser(user)
-
-      // Cargar canchas
-      const { data: courtsData, error: courtsError } = await supabase
+  const { data: courts = [], isLoading: isCourtsLoading } = useQuery({
+    queryKey: ['courts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('courts')
         .select(`
           *,
@@ -83,73 +66,67 @@ export default function ReservasPageMobile() {
         `)
         .eq('active', true)
 
-      if (courtsError) {
-        console.error('Error loading courts:', courtsError)
+      if (error) {
         toast.error('Error al cargar las canchas')
-      } else {
-        setCourts(courtsData || [])
-        // Abrir el primer tipo de deporte por defecto
-        if (courtsData && courtsData.length > 0) {
-          setOpenSportTypes([courtsData[0].sport_type.id])
-        }
+        throw error
       }
-    } catch (error) {
-      console.error('Error loading initial data:', error)
-      toast.error('Error al cargar los datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data as unknown as Court[]
+    },
+  })
 
-  const loadAvailableSlots = async () => {
-    if (!selectedCourt || !selectedDate) return
+  const loading = isUserLoading || isCourtsLoading
 
-    try {
-      // Obtener reservas existentes para la fecha y cancha seleccionada
-      const { data: reservationsData, error } = await supabase
+  const { data: existingReservations = [] } = useQuery({
+    queryKey: ['court-reservations', selectedCourt?.id, selectedDate?.toISOString().split('T')[0]],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('reservations')
         .select('id, start_time, end_time, court_id')
-        .eq('court_id', selectedCourt.id)
-        .eq('date', selectedDate.toISOString().split('T')[0])
+        .eq('court_id', selectedCourt!.id)
+        .eq('date', selectedDate!.toISOString().split('T')[0])
         .eq('status', 'ACTIVE')
 
       if (error) {
-        console.error('Error loading reservations:', error)
         toast.error('Error al cargar las reservas')
-        return
+        throw error
       }
+      return data as Reservation[]
+    },
+    enabled: !!selectedCourt && !!selectedDate,
+  })
 
-      setExistingReservations(reservationsData || [])
+  // Generar slots disponibles basados en horarios de operación y reservas existentes
+  const availableSlots = (() => {
+    if (!selectedCourt || !selectedDate) return []
 
-      // Generar slots disponibles basados en horarios de operación
-      const operatingHours = getOperatingHours(selectedDate)
-      const allSlots = generateTimeSlots(operatingHours.start, operatingHours.end)
+    const operatingHours = getOperatingHours(selectedDate)
+    const allSlots = generateTimeSlots(operatingHours.start, operatingHours.end)
 
-      // Filtrar slots ocupados
-      const occupiedSlots = new Set<string>()
-      
-      reservationsData?.forEach((reservation) => {
-        const startTime = reservation.start_time.slice(0, 5)
-        const endTime = reservation.end_time.slice(0, 5)
-        
-        // Marcar todos los slots entre start y end como ocupados
-        const startIndex = allSlots.indexOf(startTime)
-        const endIndex = allSlots.indexOf(endTime)
-        
-        for (let i = startIndex; i < endIndex; i++) {
-          if (i >= 0 && i < allSlots.length) {
-            occupiedSlots.add(allSlots[i])
-          }
+    const occupiedSlots = new Set<string>()
+
+    existingReservations.forEach((reservation) => {
+      const startTime = reservation.start_time.slice(0, 5)
+      const endTime = reservation.end_time.slice(0, 5)
+
+      // Marcar todos los slots entre start y end como ocupados
+      const startIndex = allSlots.indexOf(startTime)
+      const endIndex = allSlots.indexOf(endTime)
+
+      for (let i = startIndex; i < endIndex; i++) {
+        if (i >= 0 && i < allSlots.length) {
+          occupiedSlots.add(allSlots[i])
         }
-      })
+      }
+    })
 
-      const availableSlots = allSlots.filter(slot => !occupiedSlots.has(slot))
-      setAvailableSlots(availableSlots)
-    } catch (error) {
-      console.error('Error loading available slots:', error)
-      toast.error('Error al cargar los horarios disponibles')
-    }
-  }
+    return allSlots.filter(slot => !occupiedSlots.has(slot))
+  })()
+
+  // Abrir el primer tipo de deporte por defecto una vez que cargan las canchas
+  const effectiveOpenSportTypes =
+    openSportTypes.length === 0 && courts.length > 0
+      ? [courts[0].sport_type.id]
+      : openSportTypes
 
   const canSelectTimeSlot = (slot: string): boolean => {
     const allSlots = generateTimeSlots(
@@ -176,10 +153,10 @@ export default function ReservasPageMobile() {
   }
 
   const toggleSportType = (sportTypeId: string) => {
-    setOpenSportTypes(prev => 
-      prev.includes(sportTypeId) 
-        ? prev.filter(id => id !== sportTypeId)
-        : [...prev, sportTypeId]
+    setOpenSportTypes(
+      effectiveOpenSportTypes.includes(sportTypeId)
+        ? effectiveOpenSportTypes.filter(id => id !== sportTypeId)
+        : [...effectiveOpenSportTypes, sportTypeId]
     )
   }
 
@@ -194,7 +171,7 @@ export default function ReservasPageMobile() {
     }
     acc[sportTypeId].courts.push(court)
     return acc
-  }, {} as Record<string, { sport_type: any, courts: Court[] }>)
+  }, {} as Record<string, { sport_type: SportType, courts: Court[] }>)
 
   const handleCourtSelection = (court: Court) => {
     setSelectedCourt(court)
@@ -210,7 +187,64 @@ export default function ReservasPageMobile() {
     }
   }
 
-  const handleReservation = async () => {
+  const createReservationMutation = useMutation({
+    mutationFn: async () => {
+      const startTime = selectedTimeSlot!
+      const startHour = parseInt(startTime.split(':')[0])
+      const startMinute = parseInt(startTime.split(':')[1])
+      const endHour = startHour + duration
+      const endTime = `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`
+
+      const { error } = await supabase
+        .from('reservations')
+        .insert({
+          id: crypto.randomUUID(),
+          user_id: user!.id,
+          court_id: selectedCourt!.id,
+          date: selectedDate!.toISOString().split('T')[0],
+          start_time: `${startTime}:00`,
+          end_time: `${endTime}:00`,
+          status: 'ACTIVE'
+        })
+
+      if (error) throw error
+      return { endTime }
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Creando tu reserva...', {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: ({ endTime }, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success('¡Reserva creada exitosamente!', {
+        description: `${selectedCourt!.name} - ${formatDate(selectedDate!)} de ${selectedTimeSlot} a ${endTime}`,
+        action: {
+          label: 'Ver mis reservas',
+          onClick: () => router.push('/reservas/mis-reservas'),
+        },
+      })
+      queryClient.invalidateQueries({ queryKey: ['court-reservations', selectedCourt?.id] })
+
+      // Esperar un poco para mostrar el toast y luego redirigir
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error creating reservation:', error)
+      toast.error('Error al crear la reserva', {
+        description: 'No se pudo crear la reserva. Por favor intenta de nuevo.',
+        action: {
+          label: 'Reintentar',
+          onClick: () => createReservationMutation.mutate(),
+        },
+      })
+    },
+  })
+
+  const handleReservation = () => {
     if (!user || !selectedCourt || !selectedTimeSlot || !selectedDate) {
       toast.error('Por favor completa todos los campos', {
         description: 'Selecciona cancha, fecha y horario antes de continuar'
@@ -220,9 +254,8 @@ export default function ReservasPageMobile() {
 
     // Validar que la fecha sea futura (mínimo 24 horas)
     const now = new Date()
-    const selectedDateTime = new Date(selectedDate)
-    const hoursDifference = (selectedDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-    
+    const hoursDifference = (selectedDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+
     if (hoursDifference < 24) {
       toast.error('Fecha inválida', {
         description: 'Debes reservar con al menos 24 horas de anticipación'
@@ -230,73 +263,7 @@ export default function ReservasPageMobile() {
       return
     }
 
-    // Mostrar toast de carga
-    const loadingToast = toast.loading('Creando tu reserva...', {
-      description: 'Por favor espera un momento'
-    })
-
-    try {
-      const startTime = selectedTimeSlot
-      const startHour = parseInt(startTime.split(':')[0])
-      const startMinute = parseInt(startTime.split(':')[1])
-      const endHour = startHour + duration
-      const endTime = `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`
-
-      // Generar ID único para la reserva
-      const reservationId = 'res_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-
-      const { error } = await supabase
-        .from('reservations')
-        .insert({
-          id: reservationId,
-          user_id: user.id,
-          court_id: selectedCourt.id,
-          date: selectedDate.toISOString().split('T')[0],
-          start_time: `${startTime}:00`,
-          end_time: `${endTime}:00`,
-          status: 'ACTIVE'
-        })
-
-      // Cerrar el toast de carga
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        console.error('Error creating reservation:', error)
-        toast.error('Error al crear la reserva', {
-          description: error.message,
-          action: {
-            label: 'Intentar de nuevo',
-            onClick: () => handleReservation(),
-          },
-        })
-        return
-      }
-
-      toast.success('¡Reserva creada exitosamente!', {
-        description: `${selectedCourt.name} - ${formatDate(selectedDate)} de ${selectedTimeSlot} a ${endTime}`,
-        action: {
-          label: 'Ver mis reservas',
-          onClick: () => router.push('/reservas/mis-reservas'),
-        },
-      })
-
-      // Esperar un poco para mostrar el toast y luego redirigir
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
-    } catch (error) {
-      // Cerrar el toast de carga
-      toast.dismiss(loadingToast)
-      
-      console.error('Error creating reservation:', error)
-      toast.error('Error inesperado', {
-        description: 'No se pudo crear la reserva. Por favor intenta de nuevo.',
-        action: {
-          label: 'Reintentar',
-          onClick: () => handleReservation(),
-        },
-      })
-    }
+    createReservationMutation.mutate()
   }
 
   if (loading) {
@@ -373,7 +340,7 @@ export default function ReservasPageMobile() {
                 {Object.entries(courtsBySport).map(([sportTypeId, { sport_type, courts }]) => (
                   <Collapsible 
                     key={sportTypeId}
-                    open={openSportTypes.includes(sportTypeId)}
+                    open={effectiveOpenSportTypes.includes(sportTypeId)}
                     onOpenChange={() => toggleSportType(sportTypeId)}
                   >
                     <CollapsibleTrigger asChild>
@@ -391,7 +358,7 @@ export default function ReservasPageMobile() {
                                 <p className="text-sm text-gray-600">{courts.length} cancha{courts.length !== 1 ? 's' : ''} disponible{courts.length !== 1 ? 's' : ''}</p>
                               </div>
                             </div>
-                            {openSportTypes.includes(sportTypeId) ? (
+                            {effectiveOpenSportTypes.includes(sportTypeId) ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -492,17 +459,17 @@ export default function ReservasPageMobile() {
                       classNames={{
                         months: "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 justify-center",
                         month: "space-y-4 w-full flex flex-col",
-                        table: "w-full border-collapse space-y-1",
-                        head_row: "",
-                        head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem] flex-1 text-center",
-                        row: "flex w-full mt-2",
-                        cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-                        day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 mx-auto rounded-md hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                        day_today: "bg-accent text-accent-foreground",
-                        day_outside: "day-outside text-muted-foreground opacity-50  aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-                        day_disabled: "text-muted-foreground opacity-50",
-                        day_hidden: "invisible",
+                        month_grid: "w-full border-collapse space-y-1",
+                        weekdays: "",
+                        weekday: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem] flex-1 text-center",
+                        week: "flex w-full mt-2",
+                        day: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
+                        day_button: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 mx-auto rounded-md hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                        selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                        today: "bg-accent text-accent-foreground",
+                        outside: "day-outside text-muted-foreground opacity-50  aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                        disabled: "text-muted-foreground opacity-50",
+                        hidden: "invisible",
                       }}
                     />
                   </div>

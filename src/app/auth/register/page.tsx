@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,7 +96,7 @@ export default function RegisterPage() {
           router.refresh()
         }, 2000)
       }
-    } catch (err) {
+    } catch {
       setError('Error inesperado al registrar usuario')
     } finally {
       setLoading(false)

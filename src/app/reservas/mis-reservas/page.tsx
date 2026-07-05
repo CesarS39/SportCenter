@@ -1,22 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAuth } from '@/lib/hooks/use-require-auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Trophy, 
-  ArrowLeft, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  X, 
-  CheckCircle, 
+import {
+  Trophy,
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  Clock,
+  X,
+  CheckCircle,
   AlertCircle,
   Plus
 } from 'lucide-react'
@@ -42,28 +42,14 @@ interface Reservation {
 }
 
 export default function MisReservasPage() {
-  const [reservations, setReservations] = useState<Reservation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
-  const router = useRouter()
+  const { user, isLoading: isUserLoading } = useRequireAuth()
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    loadUserReservations()
-  }, [])
-
-  const loadUserReservations = async () => {
-    try {
-      // Verificar usuario
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-      setUser(user)
-
-      // Obtener todas las reservas del usuario
-      const { data: reservationsData, error: reservationsError } = await supabase
+  const { data: reservations = [], isLoading: isReservationsLoading } = useQuery({
+    queryKey: ['user-reservations', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('reservations')
         .select(`
           *,
@@ -76,23 +62,20 @@ export default function MisReservasPage() {
             )
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .order('date', { ascending: false })
         .order('start_time', { ascending: false })
 
-      if (reservationsError) {
-        console.error('Error loading reservations:', reservationsError)
+      if (error) {
         toast.error('Error al cargar las reservas')
-      } else {
-        setReservations(reservationsData || [])
+        throw error
       }
-    } catch (error) {
-      console.error('Error loading user reservations:', error)
-      toast.error('Error al cargar los datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data as unknown as Reservation[]
+    },
+    enabled: !!user,
+  })
+
+  const loading = isUserLoading || isReservationsLoading
 
   const canCancelReservation = (reservation: Reservation): boolean => {
     if (reservation.status !== 'ACTIVE') return false
@@ -119,45 +102,43 @@ export default function MisReservasPage() {
     return `Se puede cancelar por ${hours}h ${minutes}m más`
   }
 
-  const handleCancelReservation = async (reservationId: string) => {
-    setCancellingId(reservationId)
-    
-    const loadingToast = toast.loading('Cancelando reserva...', {
-      description: 'Por favor espera un momento'
-    })
-
-    try {
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
       const { error } = await supabase
         .from('reservations')
-        .update({ 
+        .update({
           status: 'CANCELLED',
           penalty_applied: true // Aplicar penalización por cancelación
         })
         .eq('id', reservationId)
 
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        console.error('Error cancelling reservation:', error)
-        toast.error('Error al cancelar la reserva', {
-          description: error.message
-        })
-        return
-      }
-
+      if (error) throw error
+    },
+    onMutate: (reservationId) => {
+      setCancellingId(reservationId)
+      return { loadingToast: toast.loading('Cancelando reserva...', {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: (_data, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       toast.success('Reserva cancelada exitosamente', {
         description: 'Se ha aplicado una penalización por cancelación'
       })
-
-      // Recargar las reservas
-      await loadUserReservations()
-    } catch (error) {
-      toast.dismiss(loadingToast)
+      queryClient.invalidateQueries({ queryKey: ['user-reservations', user?.id] })
+    },
+    onError: (error, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       console.error('Error cancelling reservation:', error)
-      toast.error('Error inesperado al cancelar la reserva')
-    } finally {
+      toast.error('Error al cancelar la reserva')
+    },
+    onSettled: () => {
       setCancellingId(null)
-    }
+    },
+  })
+
+  const handleCancelReservation = (reservationId: string) => {
+    cancelReservationMutation.mutate(reservationId)
   }
 
   const getStatusBadge = (status: string, penaltyApplied: boolean = false) => {

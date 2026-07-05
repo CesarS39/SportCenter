@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { userId, name, phone } = body
-    
+
     console.log('Creating profile with data:', { userId, name, phone })
+
+    const supabase = await createClient()
 
     // Crear perfil usando Supabase directamente
     const { data: profile, error } = await supabase

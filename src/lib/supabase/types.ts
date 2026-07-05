@@ -1,16 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-})
-
 // Types for our database
 export type Database = {
   public: {
@@ -37,6 +24,7 @@ export type Database = {
           max_people?: number
           created_at?: string
         }
+        Relationships: []
       }
       courts: {
         Row: {
@@ -69,6 +57,15 @@ export type Database = {
           active?: boolean
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'courts_sport_type_id_fkey'
+            columns: ['sport_type_id']
+            isOneToOne: false
+            referencedRelation: 'sport_types'
+            referencedColumns: ['id']
+          },
+        ]
       }
       user_profiles: {
         Row: {
@@ -95,6 +92,7 @@ export type Database = {
           role?: 'USER' | 'ADMIN'
           created_at?: string
         }
+        Relationships: []
       }
       reservations: {
         Row: {
@@ -130,7 +128,25 @@ export type Database = {
           penalty_applied?: boolean
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'reservations_court_id_fkey'
+            columns: ['court_id']
+            isOneToOne: false
+            referencedRelation: 'courts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'reservations_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['user_id']
+          },
+        ]
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
   }
 }

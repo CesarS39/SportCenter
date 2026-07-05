@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, MapPin, Phone, Users, Calendar, Trophy, Star, ArrowRight, Play, Shield, Zap, Award, Menu } from 'lucide-react'
+import { Clock, MapPin, Phone, Users, Calendar, Trophy, Star, ArrowRight, Shield, Zap, Award } from 'lucide-react'
 
 export default function HomePage() {
   const courts = [

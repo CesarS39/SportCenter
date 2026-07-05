@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAdmin } from '@/lib/hooks/use-require-admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { 
   Trophy, 
@@ -55,9 +56,8 @@ interface FormData {
 }
 
 export default function AdminCanchasPage() {
-  const [courts, setCourts] = useState<Court[]>([])
-  const [sportTypes, setSportTypes] = useState<SportType[]>([])
-  const [loading, setLoading] = useState(true)
+  const { isLoading: isAdminLoading } = useRequireAdmin()
+  const queryClient = useQueryClient()
   const [showDialog, setShowDialog] = useState(false)
   const [editingCourt, setEditingCourt] = useState<Court | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -67,35 +67,11 @@ export default function AdminCanchasPage() {
     max_people: '',
     image_url: ''
   })
-  const [submitting, setSubmitting] = useState(false)
-  const router = useRouter()
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    try {
-      // Verificar permisos de admin
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile?.role !== 'ADMIN') {
-        router.push('/dashboard')
-        return
-      }
-
-      // Cargar canchas
-      const { data: courtsData, error: courtsError } = await supabase
+  const { data: courts = [], isLoading: isCourtsLoading } = useQuery({
+    queryKey: ['admin-courts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('courts')
         .select(`
           *,
@@ -108,32 +84,142 @@ export default function AdminCanchasPage() {
         `)
         .order('created_at', { ascending: false })
 
-      if (courtsError) {
-        console.error('Error loading courts:', courtsError)
+      if (error) {
         toast.error('Error al cargar las canchas')
-      } else {
-        setCourts(courtsData || [])
+        throw error
       }
+      return data as unknown as Court[]
+    },
+    enabled: !isAdminLoading,
+  })
 
-      // Cargar tipos de deportes
-      const { data: sportTypesData, error: sportTypesError } = await supabase
+  const { data: sportTypes = [] } = useQuery({
+    queryKey: ['sport-types'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('sport_types')
         .select('*')
         .order('name')
 
-      if (sportTypesError) {
-        console.error('Error loading sport types:', sportTypesError)
+      if (error) {
         toast.error('Error al cargar los tipos de deportes')
-      } else {
-        setSportTypes(sportTypesData || [])
+        throw error
       }
-    } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Error al cargar los datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data as SportType[]
+    },
+    enabled: !isAdminLoading,
+  })
+
+  const loading = isAdminLoading || isCourtsLoading
+
+  const invalidateCourts = () => queryClient.invalidateQueries({ queryKey: ['admin-courts'] })
+
+  const saveCourtMutation = useMutation({
+    mutationFn: async ({ pricePerHour, maxPeople }: { pricePerHour: number; maxPeople: number }) => {
+      if (editingCourt) {
+        const { error } = await supabase
+          .from('courts')
+          .update({
+            name: formData.name,
+            sport_type_id: formData.sport_type_id,
+            price_per_hour: pricePerHour,
+            max_people: maxPeople,
+            image_url: formData.image_url || null
+          })
+          .eq('id', editingCourt.id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('courts')
+          .insert({
+            id: crypto.randomUUID(),
+            name: formData.name,
+            sport_type_id: formData.sport_type_id,
+            price_per_hour: pricePerHour,
+            max_people: maxPeople,
+            image_url: formData.image_url || null,
+            active: true
+          })
+
+        if (error) throw error
+      }
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading(
+        editingCourt ? 'Actualizando cancha...' : 'Creando cancha...',
+        { description: 'Por favor espera un momento' }
+      ) }
+    },
+    onSuccess: (_data, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success(editingCourt ? 'Cancha actualizada exitosamente' : 'Cancha creada exitosamente')
+      setShowDialog(false)
+      resetForm()
+      invalidateCourts()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error saving court:', error)
+      toast.error('Error al guardar la cancha')
+    },
+  })
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async (court: Court) => {
+      const { error } = await supabase
+        .from('courts')
+        .update({ active: !court.active })
+        .eq('id', court.id)
+
+      if (error) throw error
+      return court
+    },
+    onMutate: (court) => {
+      return { loadingToast: toast.loading(
+        `${court.active ? 'Desactivando' : 'Activando'} cancha...`,
+        { description: 'Por favor espera un momento' }
+      ) }
+    },
+    onSuccess: (court, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success(`Cancha ${court.active ? 'desactivada' : 'activada'} exitosamente`)
+      invalidateCourts()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error toggling court status:', error)
+      toast.error('Error al cambiar el estado de la cancha')
+    },
+  })
+
+  const deleteCourtMutation = useMutation({
+    mutationFn: async (court: Court) => {
+      const { error } = await supabase
+        .from('courts')
+        .delete()
+        .eq('id', court.id)
+
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Eliminando cancha...', {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: (_data, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success('Cancha eliminada exitosamente')
+      invalidateCourts()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error deleting court:', error)
+      toast.error('Error al eliminar la cancha')
+    },
+  })
+
+  const submitting = saveCourtMutation.isPending
 
   const resetForm = () => {
     setFormData({
@@ -163,14 +249,12 @@ export default function AdminCanchasPage() {
     setShowDialog(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
 
     // Validaciones
     if (!formData.name || !formData.sport_type_id || !formData.price_per_hour || !formData.max_people) {
       toast.error('Por favor completa todos los campos obligatorios')
-      setSubmitting(false)
       return
     }
 
@@ -179,136 +263,23 @@ export default function AdminCanchasPage() {
 
     if (isNaN(pricePerHour) || pricePerHour <= 0) {
       toast.error('El precio por hora debe ser un número válido mayor a 0')
-      setSubmitting(false)
       return
     }
 
     if (isNaN(maxPeople) || maxPeople <= 0) {
       toast.error('El número máximo de personas debe ser un número válido mayor a 0')
-      setSubmitting(false)
       return
     }
 
-    const loadingToast = toast.loading(
-      editingCourt ? 'Actualizando cancha...' : 'Creando cancha...',
-      { description: 'Por favor espera un momento' }
-    )
-
-    try {
-      if (editingCourt) {
-        // Actualizar cancha existente
-        const { error } = await supabase
-          .from('courts')
-          .update({
-            name: formData.name,
-            sport_type_id: formData.sport_type_id,
-            price_per_hour: pricePerHour,
-            max_people: maxPeople,
-            image_url: formData.image_url || null
-          })
-          .eq('id', editingCourt.id)
-
-        if (error) {
-          throw error
-        }
-
-        toast.success('Cancha actualizada exitosamente')
-      } else {
-        // Crear nueva cancha
-        const courtId = 'court_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-
-        const { error } = await supabase
-          .from('courts')
-          .insert({
-            id: courtId,
-            name: formData.name,
-            sport_type_id: formData.sport_type_id,
-            price_per_hour: pricePerHour,
-            max_people: maxPeople,
-            image_url: formData.image_url || null,
-            active: true
-          })
-
-        if (error) {
-          throw error
-        }
-
-        toast.success('Cancha creada exitosamente')
-      }
-
-      toast.dismiss(loadingToast)
-      setShowDialog(false)
-      resetForm()
-      await loadData() // Recargar la lista
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error saving court:', error)
-      toast.error('Error al guardar la cancha', {
-        description: error.message
-      })
-    } finally {
-      setSubmitting(false)
-    }
+    saveCourtMutation.mutate({ pricePerHour, maxPeople })
   }
 
-  const handleToggleActive = async (court: Court) => {
-    const loadingToast = toast.loading(
-      `${court.active ? 'Desactivando' : 'Activando'} cancha...`,
-      { description: 'Por favor espera un momento' }
-    )
-
-    try {
-      const { error } = await supabase
-        .from('courts')
-        .update({ active: !court.active })
-        .eq('id', court.id)
-
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        throw error
-      }
-
-      toast.success(
-        `Cancha ${court.active ? 'desactivada' : 'activada'} exitosamente`
-      )
-
-      await loadData()
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error toggling court status:', error)
-      toast.error('Error al cambiar el estado de la cancha', {
-        description: error.message
-      })
-    }
+  const handleToggleActive = (court: Court) => {
+    toggleActiveMutation.mutate(court)
   }
 
-  const handleDelete = async (court: Court) => {
-    const loadingToast = toast.loading('Eliminando cancha...', {
-      description: 'Por favor espera un momento'
-    })
-
-    try {
-      const { error } = await supabase
-        .from('courts')
-        .delete()
-        .eq('id', court.id)
-
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        throw error
-      }
-
-      toast.success('Cancha eliminada exitosamente')
-      await loadData()
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error deleting court:', error)
-      toast.error('Error al eliminar la cancha', {
-        description: error.message
-      })
-    }
+  const handleDelete = (court: Court) => {
+    deleteCourtMutation.mutate(court)
   }
 
   const getSportIcon = (sportName: string) => {
@@ -500,7 +471,7 @@ export default function AdminCanchasPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Eliminar cancha?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente la cancha "{court.name}".
+                                Esta acción no se puede deshacer. Se eliminará permanentemente la cancha &quot;{court.name}&quot;.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

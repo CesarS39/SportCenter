@@ -1,15 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAuth } from '@/lib/hooks/use-require-auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Calendar, Clock, MapPin, Plus, User, LogOut, Trophy, Menu, Bell, Settings } from 'lucide-react'
+import { Calendar, Clock, Plus, User, LogOut, Trophy, Menu, Bell, Settings } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/utils'
 
 interface UserProfile {
@@ -35,44 +37,29 @@ interface Reservation {
 }
 
 export default function DashboardPageMobile() {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [reservations, setReservations] = useState<Reservation[]>([])
-  const [loading, setLoading] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
   const router = useRouter()
+  const { user, isLoading: isUserLoading } = useRequireAuth()
 
-  useEffect(() => {
-    loadUserData()
-  }, [])
-
-  const loadUserData = async () => {
-    try {
-      // Obtener usuario actual
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // Obtener perfil del usuario
-      const { data: profileData, error: profileError } = await supabase
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .single()
 
-      if (profileError) {
-        console.error('Error loading profile:', profileError)
-      } else {
-        setProfile(profileData)
-      }
+      if (error) throw error
+      return data as UserProfile
+    },
+    enabled: !!user,
+  })
 
-      // Obtener reservas del usuario con filtro de fechas
-      const { data: reservationsData, error: reservationsError } = await supabase
+  const { data: reservations = [], isLoading: isReservationsLoading } = useQuery({
+    queryKey: ['dashboard-reservations', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('reservations')
         .select(`
           *,
@@ -84,22 +71,18 @@ export default function DashboardPageMobile() {
             )
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', user!.id)
         .gte('date', new Date().toISOString().split('T')[0]) // Solo reservas de hoy en adelante
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
-      if (reservationsError) {
-        console.error('Error loading reservations:', reservationsError)
-      } else {
-        setReservations(reservationsData || [])
-      }
-    } catch (error) {
-      console.error('Error loading user data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (error) throw error
+      return data as unknown as Reservation[]
+    },
+    enabled: !!user,
+  })
+
+  const loading = isUserLoading || isProfileLoading || isReservationsLoading
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

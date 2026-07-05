@@ -1,31 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAdmin } from '@/lib/hooks/use-require-admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { 
-  Trophy, 
-  Users, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  Settings, 
+import {
+  Trophy,
+  Users,
+  Calendar as CalendarIcon,
+  Clock,
+  MapPin,
   BarChart3,
-  AlertTriangle,
   CheckCircle,
   XCircle,
   LogOut,
-  Plus,
-  Menu,
   ArrowRight,
-  TrendingUp
 } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -71,64 +67,20 @@ interface User {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminStats>({
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const { profile, isLoading: isAdminLoading } = useRequireAdmin()
+
+  const { data: stats = {
     totalReservations: 0,
     activeReservations: 0,
     totalCourts: 0,
     totalUsers: 0,
     todayReservations: 0,
     revenue: 0
-  })
-  const [recentReservations, setRecentReservations] = useState<Reservation[]>([])
-  const [recentUsers, setRecentUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const router = useRouter()
-
-  useEffect(() => {
-    loadAdminData()
-  }, [])
-
-  const loadAdminData = async () => {
-    try {
-      // Verificar usuario y permisos de admin
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-      setUser(user)
-
-      // Verificar rol de admin
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profileError || profileData?.role !== 'ADMIN') {
-        router.push('/dashboard')
-        return
-      }
-      setProfile(profileData)
-
-      // Cargar estadísticas
-      await Promise.all([
-        loadStats(),
-        loadRecentReservations(),
-        loadRecentUsers()
-      ])
-    } catch (error) {
-      console.error('Error loading admin data:', error)
-      toast.error('Error al cargar los datos del panel')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadStats = async () => {
-    try {
+  }, isLoading: isStatsLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async (): Promise<AdminStats> => {
       // Total de reservas
       const { count: totalReservations } = await supabase
         .from('reservations')
@@ -178,22 +130,22 @@ export default function AdminDashboard() {
         return total
       }, 0) || 0
 
-      setStats({
+      return {
         totalReservations: totalReservations || 0,
         activeReservations: activeReservations || 0,
         totalCourts: totalCourts || 0,
         totalUsers: totalUsers || 0,
         todayReservations: todayReservations || 0,
         revenue
-      })
-    } catch (error) {
-      console.error('Error loading stats:', error)
-    }
-  }
+      }
+    },
+    enabled: !isAdminLoading,
+  })
 
-  const loadRecentReservations = async () => {
-    try {
-      const { data: reservationsData, error } = await supabase
+  const { data: recentReservations = [], isLoading: isReservationsLoading } = useQuery({
+    queryKey: ['admin-recent-reservations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('reservations')
         .select(`
           *,
@@ -213,73 +165,68 @@ export default function AdminDashboard() {
         .order('created_at', { ascending: false })
         .limit(10)
 
-      if (error) {
-        console.error('Error loading recent reservations:', error)
-      } else {
-        setRecentReservations(reservationsData || [])
-      }
-    } catch (error) {
-      console.error('Error loading recent reservations:', error)
-    }
-  }
+      if (error) throw error
+      return data as unknown as Reservation[]
+    },
+    enabled: !isAdminLoading,
+  })
 
-  const loadRecentUsers = async () => {
-    try {
-      const { data: usersData, error } = await supabase
+  const { data: recentUsers = [], isLoading: isUsersLoading } = useQuery({
+    queryKey: ['admin-recent-users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10)
 
-      if (error) {
-        console.error('Error loading recent users:', error)
-      } else {
-        setRecentUsers(usersData || [])
-      }
-    } catch (error) {
-      console.error('Error loading recent users:', error)
-    }
-  }
+      if (error) throw error
+      return data as User[]
+    },
+    enabled: !isAdminLoading,
+  })
+
+  const loading = isAdminLoading || isStatsLoading || isReservationsLoading || isUsersLoading
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
   }
 
-  const handleCancelReservation = async (reservationId: string) => {
-    const loadingToast = toast.loading('Cancelando reserva...', {
-      description: 'Cancelación administrativa'
-    })
-
-    try {
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
       const { error } = await supabase
         .from('reservations')
-        .update({ 
+        .update({
           status: 'CANCELLED_ADMIN',
           penalty_applied: false // Admin no aplica penalización
         })
         .eq('id', reservationId)
 
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        toast.error('Error al cancelar la reserva', {
-          description: error.message
-        })
-        return
-      }
-
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Cancelando reserva...', {
+        description: 'Cancelación administrativa'
+      }) }
+    },
+    onSuccess: (_data, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       toast.success('Reserva cancelada por administración', {
         description: 'Sin penalización para el usuario'
       })
-
-      // Recargar datos
-      await Promise.all([loadStats(), loadRecentReservations()])
-    } catch (error) {
-      toast.dismiss(loadingToast)
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-recent-reservations'] })
+    },
+    onError: (error, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       console.error('Error cancelling reservation:', error)
-      toast.error('Error inesperado al cancelar la reserva')
-    }
+      toast.error('Error al cancelar la reserva')
+    },
+  })
+
+  const handleCancelReservation = (reservationId: string) => {
+    cancelReservationMutation.mutate(reservationId)
   }
 
   const getStatusBadge = (status: string, penaltyApplied: boolean = false) => {

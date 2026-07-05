@@ -1,36 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAdmin } from '@/lib/hooks/use-require-admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Trophy, 
-  ArrowLeft, 
-  Search, 
-  Users, 
-  UserPlus, 
-  Edit, 
-  Trash2, 
-  Shield, 
+import {
+  Trophy,
+  ArrowLeft,
+  Search,
+  Users,
+  Edit,
+  Trash2,
+  Shield,
   User,
   Phone,
-  Mail,
   Calendar,
   Activity,
   Crown,
   RefreshCw,
-  Download
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -59,9 +57,8 @@ interface FormData {
 }
 
 export default function AdminUsuariosPage() {
-  const [users, setUsers] = useState<UserWithStats[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<UserWithStats[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, isLoading: isAdminLoading } = useRequireAdmin()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -71,39 +68,12 @@ export default function AdminUsuariosPage() {
     phone: '',
     role: 'USER'
   })
-  const [submitting, setSubmitting] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState<string>('')
-  const router = useRouter()
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const currentUserId = user?.id || ''
 
-  useEffect(() => {
-    applyFilters()
-  }, [users, searchTerm, roleFilter])
-
-  const loadData = async () => {
-    try {
-      // Verificar permisos de admin
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-      setCurrentUserId(user.id)
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile?.role !== 'ADMIN') {
-        router.push('/dashboard')
-        return
-      }
-
+  const { data: users = [], isLoading: isUsersLoading, refetch } = useQuery({
+    queryKey: ['admin-users-with-stats'],
+    queryFn: async () => {
       // Cargar todos los usuarios con estadísticas
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')
@@ -111,34 +81,32 @@ export default function AdminUsuariosPage() {
         .order('created_at', { ascending: false })
 
       if (usersError) {
-        console.error('Error loading users:', usersError)
         toast.error('Error al cargar los usuarios')
-        return
+        throw usersError
       }
 
       // Enriquecer datos de usuarios con estadísticas de reservas
       const usersWithStats = await Promise.all(
-        (usersData || []).map(async (user) => {
+        (usersData || []).map(async (userProfile) => {
           // Obtener estadísticas de reservas
           const { data: reservations } = await supabase
             .from('reservations')
             .select('status, created_at')
-            .eq('user_id', user.user_id)
+            .eq('user_id', userProfile.user_id)
 
           const totalReservations = reservations?.length || 0
           const activeReservations = reservations?.filter(r => r.status === 'ACTIVE').length || 0
           const completedReservations = reservations?.filter(r => r.status === 'COMPLETED').length || 0
           const cancelledReservations = reservations?.filter(r => r.status.includes('CANCELLED')).length || 0
-          const lastActivity = reservations && reservations.length > 0 
-            ? reservations[0].created_at 
+          const lastActivity = reservations && reservations.length > 0
+            ? reservations[0].created_at
             : null
 
-          // Obtener email del usuario de Auth (si es posible)
-          // Nota: En producción esto podría no estar disponible por privacidad
-          let email = 'Email no disponible'
+          // Nota: En producción, el email podría no estar disponible por privacidad
+          const email = 'Email no disponible'
 
           return {
-            ...user,
+            ...userProfile,
             email,
             totalReservations,
             activeReservations,
@@ -149,35 +117,121 @@ export default function AdminUsuariosPage() {
         })
       )
 
-      setUsers(usersWithStats)
-    } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Error al cargar los datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return usersWithStats as UserWithStats[]
+    },
+    enabled: !isAdminLoading,
+  })
 
-  const applyFilters = () => {
-    let filtered = [...users]
+  const loading = isAdminLoading || isUsersLoading
 
-    // Filtrar por término de búsqueda
+  // Aplicar filtros de forma derivada (sin estado ni efectos)
+  const filteredUsers = users.filter((u) => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(user => 
-        user.name.toLowerCase().includes(term) ||
-        user.phone?.toLowerCase().includes(term) ||
-        user.email?.toLowerCase().includes(term)
-      )
+      if (
+        !u.name.toLowerCase().includes(term) &&
+        !u.phone?.toLowerCase().includes(term) &&
+        !u.email?.toLowerCase().includes(term)
+      ) {
+        return false
+      }
     }
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false
+    return true
+  })
 
-    // Filtrar por rol
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter)
-    }
+  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users-with-stats'] })
 
-    setFilteredUsers(filtered)
-  }
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string; phone: string; role: 'USER' | 'ADMIN' }) => {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          name: data.name.trim(),
+          phone: data.phone.trim() || null,
+          role: data.role
+        })
+        .eq('id', data.id)
+
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Actualizando usuario...', {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: (_data, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success('Usuario actualizado exitosamente')
+      setShowEditDialog(false)
+      setEditingUser(null)
+      invalidateUsers()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error updating user:', error)
+      toast.error('Error al actualizar el usuario')
+    },
+  })
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (targetUser: UserProfile) => {
+      // Nota: en un sistema real, también deberías eliminar el usuario de Auth,
+      // pero eso requiere privilegios de admin de Supabase
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', targetUser.id)
+
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Eliminando usuario...', {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: (_data, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success('Usuario eliminado exitosamente')
+      invalidateUsers()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error deleting user:', error)
+      toast.error('Error al eliminar el usuario')
+    },
+  })
+
+  const toggleRoleMutation = useMutation({
+    mutationFn: async (targetUser: UserProfile) => {
+      const newRole = targetUser.role === 'ADMIN' ? 'USER' : 'ADMIN'
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role: newRole })
+        .eq('id', targetUser.id)
+
+      if (error) throw error
+      return newRole
+    },
+    onMutate: (targetUser) => {
+      const newRole = targetUser.role === 'ADMIN' ? 'USER' : 'ADMIN'
+      return { loadingToast: toast.loading(`Cambiando rol a ${newRole}...`, {
+        description: 'Por favor espera un momento'
+      }) }
+    },
+    onSuccess: (newRole, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success(`Usuario ${newRole === 'ADMIN' ? 'promovido a' : 'degradado a'} ${newRole}`)
+      invalidateUsers()
+    },
+    onError: (error, _vars, context) => {
+      toast.dismiss(context?.loadingToast)
+      console.error('Error toggling role:', error)
+      toast.error('Error al cambiar el rol')
+    },
+  })
+
+  const submitting = updateUserMutation.isPending
 
   const openEditDialog = (user: UserProfile) => {
     setFormData({
@@ -189,123 +243,41 @@ export default function AdminUsuariosPage() {
     setShowEditDialog(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
 
-    if (!editingUser) {
-      setSubmitting(false)
-      return
-    }
+    if (!editingUser) return
 
     // Validaciones
     if (!formData.name.trim()) {
       toast.error('El nombre es obligatorio')
-      setSubmitting(false)
       return
     }
 
-    const loadingToast = toast.loading('Actualizando usuario...', {
-      description: 'Por favor espera un momento'
+    updateUserMutation.mutate({
+      id: editingUser.id,
+      name: formData.name,
+      phone: formData.phone,
+      role: formData.role,
     })
-
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          name: formData.name.trim(),
-          phone: formData.phone.trim() || null,
-          role: formData.role
-        })
-        .eq('id', editingUser.id)
-
-      if (error) {
-        throw error
-      }
-
-      toast.dismiss(loadingToast)
-      toast.success('Usuario actualizado exitosamente')
-      setShowEditDialog(false)
-      setEditingUser(null)
-      await loadData()
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error updating user:', error)
-      toast.error('Error al actualizar el usuario', {
-        description: error.message
-      })
-    } finally {
-      setSubmitting(false)
-    }
   }
 
-  const handleDeleteUser = async (user: UserProfile) => {
-    if (user.user_id === currentUserId) {
+  const handleDeleteUser = (targetUser: UserProfile) => {
+    if (targetUser.user_id === currentUserId) {
       toast.error('No puedes eliminarte a ti mismo')
       return
     }
 
-    const loadingToast = toast.loading('Eliminando usuario...', {
-      description: 'Por favor espera un momento'
-    })
-
-    try {
-      // Primero eliminar el perfil
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('id', user.id)
-
-      if (profileError) {
-        throw profileError
-      }
-
-      // Nota: En un sistema real, también deberías eliminar el usuario de Auth
-      // Pero eso requiere privilegios de admin de Supabase
-      
-      toast.dismiss(loadingToast)
-      toast.success('Usuario eliminado exitosamente')
-      await loadData()
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error deleting user:', error)
-      toast.error('Error al eliminar el usuario', {
-        description: error.message
-      })
-    }
+    deleteUserMutation.mutate(targetUser)
   }
 
-  const handleToggleRole = async (user: UserProfile) => {
-    if (user.user_id === currentUserId) {
+  const handleToggleRole = (targetUser: UserProfile) => {
+    if (targetUser.user_id === currentUserId) {
       toast.error('No puedes cambiar tu propio rol')
       return
     }
 
-    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN'
-    const loadingToast = toast.loading(`Cambiando rol a ${newRole}...`, {
-      description: 'Por favor espera un momento'
-    })
-
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ role: newRole })
-        .eq('id', user.id)
-
-      if (error) {
-        throw error
-      }
-
-      toast.dismiss(loadingToast)
-      toast.success(`Usuario ${newRole === 'ADMIN' ? 'promovido a' : 'degradado a'} ${newRole}`)
-      await loadData()
-    } catch (error: any) {
-      toast.dismiss(loadingToast)
-      console.error('Error toggling role:', error)
-      toast.error('Error al cambiar el rol', {
-        description: error.message
-      })
-    }
+    toggleRoleMutation.mutate(targetUser)
   }
 
   const getUserInitials = (name: string) => {
@@ -354,7 +326,7 @@ export default function AdminUsuariosPage() {
               <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => loadData()}>
+              <Button variant="outline" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar
               </Button>

@@ -1,41 +1,33 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
+import { useRequireAdmin } from '@/lib/hooks/use-require-admin'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { 
-  Trophy, 
-  ArrowLeft, 
-  Search, 
-  Filter, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  MapPin, 
-  User,
+import {
+  Trophy,
+  ArrowLeft,
+  Search,
+  Calendar as CalendarIcon,
+  Clock,
   Phone,
   XCircle,
   CheckCircle,
   AlertTriangle,
-  Download,
   RefreshCw,
-  Menu,
   SlidersHorizontal
 } from 'lucide-react'
 import { formatDate, formatTime } from '@/lib/utils'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 
 interface Reservation {
   id: string
@@ -68,11 +60,14 @@ interface FilterState {
   searchTerm: string
 }
 
+interface SportType {
+  id: string
+  name: string
+}
+
 export default function AdminReservasPageMobile() {
-  const [reservations, setReservations] = useState<Reservation[]>([])
-  const [filteredReservations, setFilteredReservations] = useState<Reservation[]>([])
-  const [sportTypes, setSportTypes] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { isLoading: isAdminLoading } = useRequireAdmin()
+  const queryClient = useQueryClient()
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',
@@ -81,38 +76,11 @@ export default function AdminReservasPageMobile() {
     dateTo: undefined,
     searchTerm: ''
   })
-  const router = useRouter()
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  useEffect(() => {
-    applyFilters()
-  }, [reservations, filters])
-
-  const loadData = async () => {
-    try {
-      // Verificar permisos de admin
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile?.role !== 'ADMIN') {
-        router.push('/dashboard')
-        return
-      }
-
-      // Cargar todas las reservas
-      const { data: reservationsData, error: reservationsError } = await supabase
+  const { data: reservations = [], isLoading: isReservationsLoading, refetch } = useQuery({
+    queryKey: ['admin-all-reservations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('reservations')
         .select(`
           *,
@@ -133,134 +101,115 @@ export default function AdminReservasPageMobile() {
         .order('date', { ascending: false })
         .order('start_time', { ascending: false })
 
-      if (reservationsError) {
-        console.error('Error loading reservations:', reservationsError)
+      if (error) {
         toast.error('Error al cargar las reservas')
-      } else {
-        setReservations(reservationsData || [])
+        throw error
       }
+      return data as unknown as Reservation[]
+    },
+    enabled: !isAdminLoading,
+  })
 
-      // Cargar tipos de deportes para filtros
-      const { data: sportTypesData, error: sportTypesError } = await supabase
+  const { data: sportTypes = [] } = useQuery({
+    queryKey: ['sport-types'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('sport_types')
         .select('*')
         .order('name')
 
-      if (sportTypesError) {
-        console.error('Error loading sport types:', sportTypesError)
-      } else {
-        setSportTypes(sportTypesData || [])
-      }
-    } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Error al cargar los datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (error) throw error
+      return data as SportType[]
+    },
+    enabled: !isAdminLoading,
+  })
 
-  const applyFilters = () => {
-    let filtered = [...reservations]
+  const loading = isAdminLoading || isReservationsLoading
 
-    // Filtrar por estado
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(r => r.status === filters.status)
-    }
-
-    // Filtrar por tipo de deporte
-    if (filters.sportType !== 'all') {
-      filtered = filtered.filter(r => r.court.sport_type.name === filters.sportType)
-    }
-
-    // Filtrar por rango de fechas
-    if (filters.dateFrom) {
-      const fromDate = filters.dateFrom.toISOString().split('T')[0]
-      filtered = filtered.filter(r => r.date >= fromDate)
-    }
-    if (filters.dateTo) {
-      const toDate = filters.dateTo.toISOString().split('T')[0]
-      filtered = filtered.filter(r => r.date <= toDate)
-    }
-
-    // Filtrar por término de búsqueda
+  // Aplicar filtros de forma derivada (sin estado ni efectos)
+  const filteredReservations = reservations.filter((r) => {
+    if (filters.status !== 'all' && r.status !== filters.status) return false
+    if (filters.sportType !== 'all' && r.court.sport_type.name !== filters.sportType) return false
+    if (filters.dateFrom && r.date < filters.dateFrom.toISOString().split('T')[0]) return false
+    if (filters.dateTo && r.date > filters.dateTo.toISOString().split('T')[0]) return false
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase()
-      filtered = filtered.filter(r => 
-        r.user.name.toLowerCase().includes(term) ||
-        r.court.name.toLowerCase().includes(term) ||
-        r.court.sport_type.name.toLowerCase().includes(term)
-      )
+      if (
+        !r.user.name.toLowerCase().includes(term) &&
+        !r.court.name.toLowerCase().includes(term) &&
+        !r.court.sport_type.name.toLowerCase().includes(term)
+      ) {
+        return false
+      }
     }
+    return true
+  })
 
-    setFilteredReservations(filtered)
-  }
+  const invalidateReservations = () => queryClient.invalidateQueries({ queryKey: ['admin-all-reservations'] })
 
-  const handleCancelReservation = async (reservationId: string, reservationData: Reservation) => {
-    const loadingToast = toast.loading('Cancelando reserva...', {
-      description: 'Cancelación administrativa'
-    })
-
-    try {
+  const cancelReservationMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
       const { error } = await supabase
         .from('reservations')
-        .update({ 
+        .update({
           status: 'CANCELLED_ADMIN',
           penalty_applied: false // Admin no aplica penalización
         })
         .eq('id', reservationId)
 
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        toast.error('Error al cancelar la reserva', {
-          description: error.message
-        })
-        return
-      }
-
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Cancelando reserva...', {
+        description: 'Cancelación administrativa'
+      }) }
+    },
+    onSuccess: (_data, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       toast.success('Reserva cancelada por administración', {
-        description: `${reservationData.court.name} - ${reservationData.user.name}`
+        description: 'Sin penalización para el usuario'
       })
-
-      // Recargar datos
-      await loadData()
-    } catch (error) {
-      toast.dismiss(loadingToast)
+      invalidateReservations()
+    },
+    onError: (error, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       console.error('Error cancelling reservation:', error)
-      toast.error('Error inesperado al cancelar la reserva')
-    }
-  }
+      toast.error('Error al cancelar la reserva')
+    },
+  })
 
-  const handleCompleteReservation = async (reservationId: string, reservationData: Reservation) => {
-    const loadingToast = toast.loading('Marcando como completada...', {
-      description: 'Actualizando estado de reserva'
-    })
-
-    try {
+  const completeReservationMutation = useMutation({
+    mutationFn: async (reservationId: string) => {
       const { error } = await supabase
         .from('reservations')
         .update({ status: 'COMPLETED' })
         .eq('id', reservationId)
 
-      toast.dismiss(loadingToast)
-
-      if (error) {
-        toast.error('Error al marcar como completada', {
-          description: error.message
-        })
-        return
-      }
-
-      toast.success('Reserva marcada como completada', {
-        description: `${reservationData.court.name} - ${reservationData.user.name}`
-      })
-
-      await loadData()
-    } catch (error) {
-      toast.dismiss(loadingToast)
+      if (error) throw error
+    },
+    onMutate: () => {
+      return { loadingToast: toast.loading('Marcando como completada...', {
+        description: 'Actualizando estado de reserva'
+      }) }
+    },
+    onSuccess: (_data, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
+      toast.success('Reserva marcada como completada')
+      invalidateReservations()
+    },
+    onError: (error, _reservationId, context) => {
+      toast.dismiss(context?.loadingToast)
       console.error('Error completing reservation:', error)
-      toast.error('Error inesperado al completar la reserva')
-    }
+      toast.error('Error al marcar como completada')
+    },
+  })
+
+  const handleCancelReservation = (reservationId: string) => {
+    cancelReservationMutation.mutate(reservationId)
+  }
+
+  const handleCompleteReservation = (reservationId: string) => {
+    completeReservationMutation.mutate(reservationId)
   }
 
   const getStatusBadge = (status: string, penaltyApplied: boolean = false) => {
@@ -312,7 +261,6 @@ export default function AdminReservasPageMobile() {
     const today = new Date().toISOString().split('T')[0]
     return r.date === today && r.status === 'ACTIVE'
   })
-  const completedReservations = reservations.filter(r => r.status === 'COMPLETED')
   const cancelledReservations = reservations.filter(r => r.status.includes('CANCELLED'))
 
   if (loading) {
@@ -345,7 +293,7 @@ export default function AdminReservasPageMobile() {
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => loadData()}>
+              <Button variant="ghost" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
               
@@ -563,7 +511,7 @@ export default function AdminReservasPageMobile() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleCompleteReservation(reservation.id, reservation)}
+                                  onClick={() => handleCompleteReservation(reservation.id)}
                                   className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
                                 >
                                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -595,7 +543,7 @@ export default function AdminReservasPageMobile() {
                                     <AlertDialogFooter className="flex-col gap-2">
                                       <AlertDialogCancel className="w-full">Mantener reserva</AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => handleCancelReservation(reservation.id, reservation)}
+                                        onClick={() => handleCancelReservation(reservation.id)}
                                         className="bg-red-600 hover:bg-red-700 w-full"
                                       >
                                         Cancelar reserva
@@ -655,7 +603,7 @@ export default function AdminReservasPageMobile() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleCompleteReservation(reservation.id, reservation)}
+                              onClick={() => handleCompleteReservation(reservation.id)}
                               className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -682,7 +630,7 @@ export default function AdminReservasPageMobile() {
                                 <AlertDialogFooter className="flex-col gap-2">
                                   <AlertDialogCancel className="w-full">Mantener</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => handleCancelReservation(reservation.id, reservation)}
+                                    onClick={() => handleCancelReservation(reservation.id)}
                                     className="bg-red-600 hover:bg-red-700 w-full"
                                   >
                                     Cancelar
@@ -740,7 +688,7 @@ export default function AdminReservasPageMobile() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleCompleteReservation(reservation.id, reservation)}
+                                onClick={() => handleCompleteReservation(reservation.id)}
                                 className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -767,7 +715,7 @@ export default function AdminReservasPageMobile() {
                                   <AlertDialogFooter className="flex-col gap-2">
                                     <AlertDialogCancel className="w-full">Mantener</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleCancelReservation(reservation.id, reservation)}
+                                      onClick={() => handleCancelReservation(reservation.id)}
                                       className="bg-red-600 hover:bg-red-700 w-full"
                                     >
                                       Cancelar
