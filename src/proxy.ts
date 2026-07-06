@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/lib/supabase/types'
+import { getProfileByUserId } from '@/lib/services/profile.service'
 
 export async function proxy(req: NextRequest) {
   let res = NextResponse.next({ request: req })
@@ -56,11 +57,7 @@ export async function proxy(req: NextRequest) {
 
   // Verificar permisos de admin
   if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
+    const profile = await getProfileByUserId(user.id)
 
     if (profile?.role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/dashboard', req.url))

@@ -1,35 +1,12 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase/client'
 import { useRequireAuth } from './use-require-auth'
-
-interface AdminProfile {
-  id: string
-  user_id: string
-  name: string
-  phone: string | null
-  role: 'USER' | 'ADMIN'
-}
+import { useProfile } from './use-profile'
 
 export function useRequireAdmin() {
   const router = useRouter()
   const { user, isLoading: isUserLoading } = useRequireAuth()
-
-  const { data: profile, isFetched, isLoading: isProfileLoading } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single()
-
-      if (error) throw error
-      return data as AdminProfile
-    },
-    enabled: !!user,
-  })
+  const { data: profile, isFetched, isLoading: isProfileLoading } = useProfile()
 
   const isAdmin = profile?.role === 'ADMIN'
 

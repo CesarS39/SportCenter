@@ -19,6 +19,15 @@ export function formatTime(time: string): string {
   return time.slice(0, 5) // "14:30:00" -> "14:30"
 }
 
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
 // Validaciones de horarios
 export const OPERATING_HOURS = {
   monday: { start: '07:00', end: '21:00' },

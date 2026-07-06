@@ -1,246 +1,62 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase/client'
 import { useRequireAuth } from '@/lib/hooks/use-require-auth'
+import { useDashboard } from '@/lib/hooks/use-dashboard'
+import { useLogout } from '@/lib/hooks/use-logout'
+import { useReservationBuckets } from '@/lib/hooks/use-reservation-buckets'
+import { DashboardMenuSheet } from '@/components/dashboard/dashboard-menu-sheet'
+import { UpcomingReservationCard } from '@/components/dashboard/upcoming-reservation-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Calendar, Clock, Plus, User, LogOut, Trophy, Menu, Bell, Settings } from 'lucide-react'
-import { formatDate, formatTime } from '@/lib/utils'
+import { StatCard } from '@/components/shared/stat-card'
+import { EmptyState } from '@/components/shared/empty-state'
+import { FullscreenLoader } from '@/components/shared/fullscreen-loader'
+import { PageHeader } from '@/components/shared/page-header'
+import { getInitials } from '@/lib/utils'
+import { Calendar, Clock, Plus, Trophy, Bell } from 'lucide-react'
 
-interface UserProfile {
-  id: string
-  name: string
-  phone: string | null
-  role: 'USER' | 'ADMIN'
-}
-
-interface Reservation {
-  id: string
-  date: string
-  start_time: string
-  end_time: string
-  status: 'ACTIVE' | 'CANCELLED' | 'CANCELLED_ADMIN' | 'COMPLETED'
-  court: {
-    id: string
-    name: string
-    sport_type: {
-      name: string
-    }
-  }
-}
-
-export default function DashboardPageMobile() {
+export default function DashboardPage() {
   const [showMenu, setShowMenu] = useState(false)
-  const router = useRouter()
-  const { user, isLoading: isUserLoading } = useRequireAuth()
+  const { isLoading: isUserLoading } = useRequireAuth()
+  const { data, isLoading: isDashboardLoading } = useDashboard()
+  const handleLogout = useLogout()
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single()
+  const loading = isUserLoading || isDashboardLoading
+  const profile = data?.profile
+  const reservations = data?.reservations ?? []
+  const { active: activeReservations, today: todayReservations } = useReservationBuckets(reservations)
 
-      if (error) throw error
-      return data as UserProfile
-    },
-    enabled: !!user,
-  })
-
-  const { data: reservations = [], isLoading: isReservationsLoading } = useQuery({
-    queryKey: ['dashboard-reservations', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          court:courts (
-            id,
-            name,
-            sport_type:sport_types (
-              name
-            )
-          )
-        `)
-        .eq('user_id', user!.id)
-        .gte('date', new Date().toISOString().split('T')[0]) // Solo reservas de hoy en adelante
-        .order('date', { ascending: true })
-        .order('start_time', { ascending: true })
-
-      if (error) throw error
-      return data as unknown as Reservation[]
-    },
-    enabled: !!user,
-  })
-
-  const loading = isUserLoading || isProfileLoading || isReservationsLoading
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-      CANCELLED_ADMIN: 'bg-orange-100 text-orange-800',
-      COMPLETED: 'bg-gray-100 text-gray-800'
-    }
-    
-    const labels = {
-      ACTIVE: 'Activa',
-      CANCELLED: 'Cancelada',
-      CANCELLED_ADMIN: 'Cancelada por Admin',
-      COMPLETED: 'Completada'
-    }
-
-    return (
-      <Badge className={`${styles[status as keyof typeof styles]} text-xs px-1.5 py-0.5`}>
-        {labels[status as keyof typeof labels]}
-      </Badge>
-    )
-  }
-
-  const getSportIcon = (sportName: string) => {
-    const icons: { [key: string]: string } = {
-      'Tenis': '🎾',
-      'Pádel': '🏓',
-      'Fútbol': '⚽'
-    }
-    return icons[sportName] || '🏟️'
-  }
+  const weekFromNow = new Date()
+  weekFromNow.setDate(weekFromNow.getDate() + 7)
+  const thisWeekCount = activeReservations.filter((r) => new Date(r.date) <= weekFromNow).length
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    )
+    return <FullscreenLoader message="Cargando..." />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header - Sticky */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="px-4 sm:px-6">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center min-w-0 flex-1">
-              <Trophy className="h-6 w-6 text-green-600 mr-2 flex-shrink-0" />
-              <h1 className="text-lg font-bold text-gray-900">SportCenter</h1>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Notificaciones (placeholder) */}
-              <Button variant="ghost" size="sm">
-                <Bell className="h-5 w-5" />
-              </Button>
-              
-              {/* Menu lateral */}
-              <Sheet open={showMenu} onOpenChange={setShowMenu}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                  <SheetHeader>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-green-100 text-green-600 text-lg font-semibold">
-                          {profile?.name 
-                            ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                            : 'U'
-                          }
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <SheetTitle className="text-left">{profile?.name || 'Usuario'}</SheetTitle>
-                        <SheetDescription className="text-left">
-                          {profile?.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
-                        </SheetDescription>
-                      </div>
-                    </div>
-                  </SheetHeader>
-                  
-                  <div className="space-y-4 mt-6">
-                    {/* Navegación */}
-                    <div className="space-y-2">
-                      <Button variant="ghost" asChild className="w-full justify-start h-12">
-                        <Link href="/reservas" onClick={() => setShowMenu(false)}>
-                          <Plus className="h-5 w-5 mr-3" />
-                          Nueva Reserva
-                        </Link>
-                      </Button>
-                      
-                      <Button variant="ghost" asChild className="w-full justify-start h-12">
-                        <Link href="/reservas/mis-reservas" onClick={() => setShowMenu(false)}>
-                          <Calendar className="h-5 w-5 mr-3" />
-                          Mis Reservas
-                        </Link>
-                      </Button>
-                      
-                      {profile?.role === 'ADMIN' && (
-                        <Button variant="ghost" asChild className="w-full justify-start h-12">
-                          <Link href="/admin" onClick={() => setShowMenu(false)}>
-                            <Settings className="h-5 w-5 mr-3" />
-                            Panel Admin
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* Información del usuario */}
-                    <div className="pt-4 border-t">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span>{profile?.phone || 'Sin teléfono'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Logout */}
-                    <div className="pt-4 border-t">
-                      <Button 
-                        variant="outline" 
-                        onClick={handleLogout} 
-                        className="w-full justify-start h-12 text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        <LogOut className="h-5 w-5 mr-3" />
-                        Cerrar Sesión
-                      </Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="SportCenter"
+        actions={
+          <>
+            <Button variant="ghost" size="sm">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DashboardMenuSheet open={showMenu} onOpenChange={setShowMenu} profile={profile} onLogout={handleLogout} />
+          </>
+        }
+      />
 
       <main className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
-        {/* Welcome Section - Optimizada para móvil */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-6">
             <Avatar className="h-14 w-14 flex-shrink-0">
               <AvatarFallback className="bg-green-100 text-green-600 text-lg font-semibold">
-                {profile?.name 
-                  ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                  : 'U'
-                }
+                {profile?.name ? getInitials(profile.name) : 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
@@ -251,7 +67,6 @@ export default function DashboardPageMobile() {
             </div>
           </div>
 
-          {/* Quick Actions - Botones apilados en móvil */}
           <div className="space-y-3 sm:space-y-0 sm:flex sm:gap-4">
             <Button asChild className="w-full sm:flex-1 sm:max-w-xs h-12">
               <Link href="/reservas">
@@ -265,68 +80,18 @@ export default function DashboardPageMobile() {
           </div>
         </div>
 
-        {/* Stats Cards - Grid responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Reservas Activas</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => r.status === 'ACTIVE').length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-green-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Hoy</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => {
-                      const today = new Date().toISOString().split('T')[0]
-                      return r.date === today && r.status === 'ACTIVE'
-                    }).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Trophy className="h-8 w-8 text-yellow-600 flex-shrink-0" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Esta Semana</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {reservations.filter(r => {
-                      const reservationDate = new Date(r.date)
-                      const weekFromNow = new Date()
-                      weekFromNow.setDate(weekFromNow.getDate() + 7)
-                      return reservationDate <= weekFromNow && r.status === 'ACTIVE'
-                    }).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard icon={Calendar} iconClassName="text-blue-600" label="Reservas Activas" value={activeReservations.length} />
+          <StatCard icon={Clock} iconClassName="text-green-600" label="Hoy" value={todayReservations.length} />
+          <StatCard icon={Trophy} iconClassName="text-yellow-600" label="Esta Semana" value={thisWeekCount} />
         </div>
 
-        {/* Próximas Reservas - Cards optimizadas para móvil */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Próximas Reservas</CardTitle>
-                <CardDescription className="text-sm">
-                  Tus reservas activas próximas
-                </CardDescription>
+                <CardDescription className="text-sm">Tus reservas activas próximas</CardDescription>
               </div>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/reservas/mis-reservas">Ver todas</Link>
@@ -334,79 +99,21 @@ export default function DashboardPageMobile() {
             </div>
           </CardHeader>
           <CardContent>
-            {reservations.filter(r => r.status === 'ACTIVE').length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No tienes reservas activas</h3>
-                <p className="text-gray-600 mb-4">¡Haz tu primera reserva y disfruta de nuestras canchas!</p>
-                <Button asChild>
-                  <Link href="/reservas">Hacer Reserva</Link>
-                </Button>
-              </div>
+            {activeReservations.length === 0 ? (
+              <EmptyState
+                icon={Calendar}
+                title="No tienes reservas activas"
+                description="¡Haz tu primera reserva y disfruta de nuestras canchas!"
+                action={{ label: 'Hacer Reserva', href: '/reservas' }}
+                compact
+              />
             ) : (
               <div className="space-y-3">
-                {reservations
-                  .filter(r => r.status === 'ACTIVE')
-                  .slice(0, 5)
-                  .map((reservation) => {
-                    const reservationDate = new Date(reservation.date)
-                    const today = new Date()
-                    const isToday = reservationDate.toDateString() === today.toDateString()
-                    const isTomorrow = reservationDate.toDateString() === new Date(today.getTime() + 24 * 60 * 60 * 1000).toDateString()
-                    
-                    let dateLabel = formatDate(reservationDate)
-                    if (isToday) dateLabel = 'Hoy'
-                    else if (isTomorrow) dateLabel = 'Mañana'
-                    
-                    return (
-                      <Card key={reservation.id} className={`border shadow-sm ${isToday ? 'bg-green-50 border-green-200' : ''}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="text-2xl flex-shrink-0">
-                              {getSportIcon(reservation.court.sport_type.name)}
-                            </div>
-                            
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold truncate">{reservation.court.name}</h3>
-                                <Badge variant="outline" className="text-xs flex-shrink-0">
-                                  {reservation.court.sport_type.name}
-                                </Badge>
-                                {isToday && (
-                                  <Badge className="bg-green-600 text-white text-xs">HOY</Badge>
-                                )}
-                              </div>
-                              
-                              <div className="space-y-1 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 flex-shrink-0" />
-                                  <span className="font-medium">
-                                    {dateLabel}
-                                    {!isToday && !isTomorrow && (
-                                      <span className="text-xs font-normal text-gray-500 ml-1">
-                                        ({reservationDate.toLocaleDateString('es-ES', { weekday: 'short' })})
-                                      </span>
-                                    )}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4 flex-shrink-0" />
-                                  <span>{formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex-shrink-0">
-                              {getStatusBadge(reservation.status)}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                  
-                {reservations.filter(r => r.status === 'ACTIVE').length > 5 && (
+                {activeReservations.slice(0, 5).map((reservation) => (
+                  <UpcomingReservationCard key={reservation.id} reservation={reservation} />
+                ))}
+
+                {activeReservations.length > 5 && (
                   <div className="text-center pt-4">
                     <Button variant="outline" asChild>
                       <Link href="/reservas/mis-reservas">Ver todas las reservas</Link>
@@ -418,8 +125,7 @@ export default function DashboardPageMobile() {
           </CardContent>
         </Card>
       </main>
-      
-      {/* Floating Action Button para móvil */}
+
       <div className="fixed bottom-6 right-6 z-50">
         <Button asChild size="lg" className="rounded-full shadow-lg h-14 w-14 p-0">
           <Link href="/reservas">
