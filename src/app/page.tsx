@@ -107,13 +107,13 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden bg-slate-900">
+      <section className="relative pt-8 pb-16 sm:pt-10 sm:pb-20 lg:pt-14 lg:pb-24 overflow-hidden bg-slate-900">
         <div className="absolute inset-0 bg-mesh-emerald" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-xl rounded-full text-xs sm:text-sm font-semibold mb-6 sm:mb-8 border border-white/15">
+            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-xl rounded-full text-xs sm:text-sm font-semibold mb-4 sm:mb-6 border border-white/15">
               <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-amber-300 fill-current" />
               Club Deportivo #1 en la Ciudad
             </div>
@@ -132,8 +132,8 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-10 sm:mb-16 px-4">
-              <Button size="lg" asChild className="rounded-xl bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 h-auto text-base sm:text-lg shadow-lg transition-colors">
-                <Link href="/auth/register" className="flex items-center justify-center w-full">
+              <Button size="lg" asChild className="rounded-xl bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 h-auto text-base sm:text-lg shadow-lg transition-colors w-auto self-center">
+                <Link href="/auth/register" className="flex items-center justify-center">
                   Comenzar Gratis
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
