@@ -42,28 +42,28 @@ export function TimeSelectorStep({
     : null
 
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">3</span>
+              <span className="bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">3</span>
               Seleccionar Horario
             </CardTitle>
             <CardDescription>Elige la hora y duración</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={onChangeDate}>
+          <Button variant="outline" size="sm" onClick={onChangeDate} className="rounded-lg">
             Cambiar fecha
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xl">{getSportIcon(selectedCourt.sportType.name)}</span>
             <div>
-              <p className="font-medium text-green-800">{selectedCourt.name}</p>
-              <p className="text-sm text-green-600">{formatDate(selectedDate)}</p>
+              <p className="font-medium text-emerald-800">{selectedCourt.name}</p>
+              <p className="text-sm text-emerald-600">{formatDate(selectedDate)}</p>
             </div>
           </div>
         </div>
@@ -71,11 +71,11 @@ export function TimeSelectorStep({
         <div>
           <label className="text-sm font-medium mb-3 block">Duración</label>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant={duration === 1 ? 'default' : 'outline'} onClick={() => onChangeDuration(1)} className="h-12">
+            <Button variant={duration === 1 ? 'default' : 'outline'} onClick={() => onChangeDuration(1)} className="h-12 rounded-xl">
               1 hora
               <div className="text-xs text-muted-foreground ml-2">${selectedCourt.pricePerHour}</div>
             </Button>
-            <Button variant={duration === 2 ? 'default' : 'outline'} onClick={() => onChangeDuration(2)} className="h-12">
+            <Button variant={duration === 2 ? 'default' : 'outline'} onClick={() => onChangeDuration(2)} className="h-12 rounded-xl">
               2 horas
               <div className="text-xs text-muted-foreground ml-2">${selectedCourt.pricePerHour * 2}</div>
             </Button>
@@ -97,7 +97,7 @@ export function TimeSelectorStep({
                   variant={selectedTimeSlot === slot ? 'default' : 'outline'}
                   onClick={() => onSelectTimeSlot(slot)}
                   disabled={!canSelectTimeSlot(slot)}
-                  className="h-12 text-sm"
+                  className="h-12 text-sm rounded-xl"
                 >
                   <Clock className="h-4 w-4 mr-2" />
                   {slot}
@@ -108,7 +108,7 @@ export function TimeSelectorStep({
         </div>
 
         {selectedTimeSlot && (
-          <Card className="border-green-200 bg-green-50">
+          <Card className="rounded-2xl border-emerald-200 bg-emerald-50">
             <CardHeader>
               <CardTitle className="text-lg">Resumen de Reserva</CardTitle>
             </CardHeader>
@@ -136,11 +136,11 @@ export function TimeSelectorStep({
                 </div>
                 <div className="flex justify-between font-semibold text-lg border-t pt-3">
                   <span>Total:</span>
-                  <span className="text-green-600">${selectedCourt.pricePerHour * duration}</span>
+                  <span className="text-emerald-600">${selectedCourt.pricePerHour * duration}</span>
                 </div>
               </div>
 
-              <Button className="w-full h-12 text-lg" onClick={onConfirm} disabled={submitting}>
+              <Button className="w-full h-12 text-lg rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" onClick={onConfirm} disabled={submitting}>
                 Confirmar Reserva
               </Button>
             </CardContent>

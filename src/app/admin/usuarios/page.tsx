@@ -102,7 +102,7 @@ export default function AdminUsuariosPage() {
   const activeUsers = users.filter((u) => u.activeReservations > 0).length
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader
         title="Gestión de Usuarios"
         backHref="/admin"
@@ -121,7 +121,7 @@ export default function AdminUsuariosPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="mb-8">
+        <Card className="mb-8 rounded-2xl border-slate-100">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
@@ -131,7 +131,7 @@ export default function AdminUsuariosPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Buscar por nombre, teléfono..."
                   value={searchTerm}
@@ -165,13 +165,13 @@ export default function AdminUsuariosPage() {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard icon={Users} iconClassName="text-blue-600" label="Total Usuarios" value={users.length} />
-          <StatCard icon={Crown} iconClassName="text-purple-600" label="Administradores" value={adminUsers} />
-          <StatCard icon={User} iconClassName="text-green-600" label="Usuarios Regulares" value={regularUsers} />
-          <StatCard icon={Activity} iconClassName="text-orange-600" label="Con Reservas Activas" value={activeUsers} />
+          <StatCard icon={Users} tint="blue" label="Total Usuarios" value={users.length} />
+          <StatCard icon={Crown} tint="purple" label="Administradores" value={adminUsers} />
+          <StatCard icon={User} tint="emerald" label="Usuarios Regulares" value={regularUsers} />
+          <StatCard icon={Activity} tint="orange" label="Con Reservas Activas" value={activeUsers} />
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-slate-100">
           <CardHeader>
             <CardTitle>Lista de Usuarios</CardTitle>
             <CardDescription>

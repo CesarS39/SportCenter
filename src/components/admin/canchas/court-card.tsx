@@ -25,17 +25,17 @@ interface CourtCardProps {
 
 export function CourtCard({ court, onEdit, onToggleActive, onDelete }: CourtCardProps) {
   return (
-    <Card className={`hover:shadow-md transition-shadow ${!court.active ? 'opacity-60' : ''}`}>
+    <Card className={`rounded-2xl border-slate-100 hover:shadow-md transition-shadow ${!court.active ? 'opacity-60' : ''}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">{getSportIcon(court.sportType.name)}</span>
-            <h3 className="font-semibold text-lg">{court.name}</h3>
+            <h3 className="font-semibold text-lg text-slate-900">{court.name}</h3>
           </div>
-          <Badge variant={court.active ? 'default' : 'secondary'}>{court.active ? 'Activa' : 'Inactiva'}</Badge>
+          <Badge variant={court.active ? 'default' : 'secondary'} className="rounded-full">{court.active ? 'Activa' : 'Inactiva'}</Badge>
         </div>
 
-        <div className="space-y-2 text-sm text-gray-600 mb-4">
+        <div className="space-y-2 text-sm text-slate-600 mb-4">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             <span>{court.sportType.name}</span>
@@ -51,7 +51,7 @@ export function CourtCard({ court, onEdit, onToggleActive, onDelete }: CourtCard
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(court)} className="flex-1">
+          <Button variant="outline" size="sm" onClick={() => onEdit(court)} className="flex-1 rounded-lg">
             <Edit className="h-4 w-4 mr-1" />
             Editar
           </Button>
@@ -60,14 +60,14 @@ export function CourtCard({ court, onEdit, onToggleActive, onDelete }: CourtCard
             variant="outline"
             size="sm"
             onClick={() => onToggleActive(court)}
-            className={court.active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
+            className={`rounded-lg ${court.active ? 'text-red-600 hover:text-red-700' : 'text-emerald-600 hover:text-emerald-700'}`}
           >
             {court.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+              <Button variant="outline" size="sm" className="rounded-lg text-red-600 hover:text-red-700">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>

@@ -54,7 +54,7 @@ export default function MisReservasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader
         title="Mis Reservas"
         backHref="/dashboard"
@@ -70,13 +70,13 @@ export default function MisReservasPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard icon={CalendarIcon} iconClassName="text-blue-600" label="Total" value={reservations.length} />
-          <StatCard icon={CheckCircle} iconClassName="text-green-600" label="Activas" value={activeReservations.length} />
-          <StatCard icon={Clock} iconClassName="text-yellow-600" label="Hoy" value={todayReservations.length} />
-          <StatCard icon={AlertCircle} iconClassName="text-orange-600" label="Próximas" value={upcomingReservations.length} />
+          <StatCard icon={CalendarIcon} tint="blue" label="Total" value={reservations.length} />
+          <StatCard icon={CheckCircle} tint="emerald" label="Activas" value={activeReservations.length} />
+          <StatCard icon={Clock} tint="yellow" label="Hoy" value={todayReservations.length} />
+          <StatCard icon={AlertCircle} tint="orange" label="Próximas" value={upcomingReservations.length} />
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-slate-100">
           <CardHeader>
             <CardTitle>Historial de Reservas</CardTitle>
             <CardDescription>Gestiona y revisa todas tus reservas</CardDescription>

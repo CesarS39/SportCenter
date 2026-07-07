@@ -39,7 +39,7 @@ export function MyReservationCard({
   isPast = false,
 }: MyReservationCardProps) {
   return (
-    <Card className={`hover:shadow-md transition-shadow ${isPast ? 'opacity-75' : ''}`}>
+    <Card className={`rounded-2xl border-slate-100 hover:shadow-md transition-shadow ${isPast ? 'opacity-75' : ''}`}>
       <CardContent className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
@@ -49,7 +49,7 @@ export function MyReservationCard({
                 <h3 className="font-semibold text-lg truncate">{reservation.court.name}</h3>
                 <Badge variant="outline">{reservation.court.sportType.name}</Badge>
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+              <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="h-4 w-4" />
                   {formatDate(new Date(reservation.date))}
@@ -60,10 +60,10 @@ export function MyReservationCard({
                 </div>
               </div>
               {showCancellationHint && (
-                <p className="text-xs text-gray-500 mt-1">{getTimeUntilCancellation(reservation)}</p>
+                <p className="text-xs text-slate-500 mt-1">{getTimeUntilCancellation(reservation)}</p>
               )}
               {isPast && (
-                <p className="text-xs text-gray-500 mt-1">Precio pagado: ${reservation.court.pricePerHour}</p>
+                <p className="text-xs text-slate-500 mt-1">Precio pagado: ${reservation.court.pricePerHour}</p>
               )}
             </div>
           </div>
@@ -76,7 +76,7 @@ export function MyReservationCard({
                 size="sm"
                 onClick={() => onCancel(reservation.id)}
                 disabled={cancelling}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <X className="h-4 w-4 mr-1" />
                 {cancelling ? 'Cancelando...' : 'Cancelar'}

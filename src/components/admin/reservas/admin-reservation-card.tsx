@@ -34,7 +34,7 @@ export function AdminReservationCard({
   showDetails = false,
 }: AdminReservationCardProps) {
   return (
-    <Card className={`border shadow-sm ${highlight ? 'bg-yellow-50' : ''}`}>
+    <Card className={`rounded-2xl border-slate-100 shadow-sm ${highlight ? 'bg-amber-50 border-amber-200' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -46,17 +46,17 @@ export function AdminReservationCard({
                   {reservation.court.sportType.name}
                 </Badge>
               </div>
-              <p className="text-sm text-gray-600 truncate">{reservation.user.name}</p>
+              <p className="text-sm text-slate-600 truncate">{reservation.user.name}</p>
             </div>
           </div>
           {highlight ? (
-            <Badge className="bg-yellow-500 text-white">HOY</Badge>
+            <Badge className="bg-amber-500 text-white rounded-full">HOY</Badge>
           ) : (
             <ReservationStatusBadge status={reservation.status} penaltyApplied={reservation.penaltyApplied} />
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+        <div className="grid grid-cols-2 gap-4 text-sm text-slate-600 mb-3">
           <div className="flex items-center gap-1">
             <CalendarIcon className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">{formatDate(new Date(reservation.date))}</span>
@@ -70,7 +70,7 @@ export function AdminReservationCard({
         </div>
 
         {showDetails && (
-          <div className="text-xs text-gray-500 mb-3 space-y-1">
+          <div className="text-xs text-slate-500 mb-3 space-y-1">
             <div className="flex items-center gap-1">
               <Phone className="h-3 w-3" />
               <span>{reservation.user.phone || 'Sin teléfono'}</span>
@@ -88,7 +88,7 @@ export function AdminReservationCard({
               variant="outline"
               size="sm"
               onClick={() => onComplete(reservation.id)}
-              className="text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
+              className="rounded-lg text-blue-600 hover:text-blue-700 flex-1 h-8 text-xs"
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Completar
@@ -96,7 +96,7 @@ export function AdminReservationCard({
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 flex-1 h-8 text-xs">
+                <Button variant="outline" size="sm" className="rounded-lg text-red-600 hover:text-red-700 flex-1 h-8 text-xs">
                   <XCircle className="h-3 w-3 mr-1" />
                   Cancelar
                 </Button>

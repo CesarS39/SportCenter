@@ -91,7 +91,7 @@ export default function AdminReservasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader
         title="Reservas"
         backHref="/admin"
@@ -113,13 +113,13 @@ export default function AdminReservasPage() {
 
       <main className="px-4 sm:px-6 py-4 max-w-7xl mx-auto">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-6">
-          <StatCard icon={CalendarIcon} iconClassName="text-blue-600" label="Total" value={filteredReservations.length} compact />
-          <StatCard icon={CheckCircle} iconClassName="text-green-600" label="Activas" value={activeReservations.length} compact />
-          <StatCard icon={Clock} iconClassName="text-yellow-600" label="Hoy" value={todayReservations.length} compact />
-          <StatCard icon={AlertTriangle} iconClassName="text-red-600" label="Canceladas" value={cancelledReservations.length} compact />
+          <StatCard icon={CalendarIcon} tint="blue" label="Total" value={filteredReservations.length} compact />
+          <StatCard icon={CheckCircle} tint="emerald" label="Activas" value={activeReservations.length} compact />
+          <StatCard icon={Clock} tint="yellow" label="Hoy" value={todayReservations.length} compact />
+          <StatCard icon={AlertTriangle} tint="red" label="Canceladas" value={cancelledReservations.length} compact />
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-slate-100">
           <CardContent className="p-0">
             <div className="p-4 border-b">
               <Tabs defaultValue="all" className="w-full">

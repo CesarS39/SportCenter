@@ -27,10 +27,10 @@ export function CourtSelectorStep({
   onSelectCourt,
 }: CourtSelectorStepProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">1</span>
+          <span className="bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">1</span>
           Seleccionar Cancha
         </CardTitle>
         <CardDescription>Elige la cancha que deseas reservar</CardDescription>
@@ -43,14 +43,14 @@ export function CourtSelectorStep({
             onOpenChange={() => onToggleSportType(sportTypeId)}
           >
             <CollapsibleTrigger asChild>
-              <Card className="cursor-pointer hover:shadow-md transition-all">
+              <Card className="rounded-xl border-slate-100 cursor-pointer hover:shadow-md transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">{getSportIcon(sportType.name)}</div>
                       <div>
                         <h3 className="font-semibold">{sportType.name}</h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           {courts.length} cancha{courts.length !== 1 ? 's' : ''} disponible{courts.length !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -68,17 +68,17 @@ export function CourtSelectorStep({
               {courts.map((court) => (
                 <Card
                   key={court.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ml-4 ${
-                    selectedCourtId === court.id ? 'ring-2 ring-green-500 bg-green-50' : ''
+                  className={`rounded-xl border-slate-100 cursor-pointer transition-all hover:shadow-md ml-4 ${
+                    selectedCourtId === court.id ? 'ring-2 ring-emerald-500 bg-emerald-50' : ''
                   }`}
                   onClick={() => onSelectCourt(court)}
                 >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-medium">{court.name}</h4>
-                      {selectedCourtId === court.id && <Badge className="bg-green-600">Seleccionada</Badge>}
+                      {selectedCourtId === court.id && <Badge className="bg-emerald-600 rounded-full">Seleccionada</Badge>}
                     </div>
-                    <div className="space-y-2 text-sm text-gray-600">
+                    <div className="space-y-2 text-sm text-slate-600">
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />${court.pricePerHour}/hora
                       </div>

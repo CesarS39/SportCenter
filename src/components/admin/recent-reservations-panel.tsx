@@ -30,7 +30,7 @@ export function RecentReservationsPanel({ reservations, onCancel, variant }: Rec
 
   if (variant === 'mobile') {
     return (
-      <Card>
+      <Card className="rounded-2xl border-slate-100">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -47,7 +47,7 @@ export function RecentReservationsPanel({ reservations, onCancel, variant }: Rec
         <CardContent>
           <div className="space-y-3">
             {items.map((reservation) => (
-              <Card key={reservation.id} className="border shadow-sm">
+              <Card key={reservation.id} className="rounded-xl border-slate-100 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="text-xl flex-shrink-0">{getSportIcon(reservation.court.sportType.name)}</div>
@@ -58,8 +58,8 @@ export function RecentReservationsPanel({ reservations, onCancel, variant }: Rec
                           {reservation.court.sportType.name}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 truncate">{reservation.user.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                      <p className="text-sm text-slate-600 truncate">{reservation.user.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
                         <span>{formatDate(new Date(reservation.date))}</span>
                         <span>•</span>
                         <span>{formatTime(reservation.startTime)}</span>
@@ -90,14 +90,14 @@ export function RecentReservationsPanel({ reservations, onCancel, variant }: Rec
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Reservas Recientes</CardTitle>
             <CardDescription>Últimas reservas realizadas en el sistema</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="rounded-lg">
             <Link href="/admin/reservas">
               Ver todas <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
@@ -107,12 +107,12 @@ export function RecentReservationsPanel({ reservations, onCancel, variant }: Rec
       <CardContent>
         <div className="space-y-4">
           {items.map((reservation) => (
-            <div key={reservation.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div key={reservation.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:bg-slate-50/60 transition-colors">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="text-2xl flex-shrink-0">{getSportIcon(reservation.court.sportType.name)}</div>
                 <div className="min-w-0">
                   <p className="font-medium truncate">{reservation.court.name}</p>
-                  <p className="text-sm text-gray-600 truncate">
+                  <p className="text-sm text-slate-600 truncate">
                     {reservation.user.name} • {formatDate(new Date(reservation.date))} • {formatTime(reservation.startTime)}
                   </p>
                 </div>

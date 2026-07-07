@@ -17,7 +17,7 @@ export function RecentUsersPanel({ users, variant }: RecentUsersPanelProps) {
 
   if (variant === 'mobile') {
     return (
-      <Card>
+      <Card className="rounded-2xl border-slate-100">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -34,18 +34,18 @@ export function RecentUsersPanel({ users, variant }: RecentUsersPanelProps) {
         <CardContent>
           <div className="space-y-3">
             {items.map((user) => (
-              <Card key={user.id} className="border shadow-sm">
+              <Card key={user.id} className="rounded-xl border-slate-100 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
+                      <AvatarFallback className="bg-blue-50 text-blue-600 text-sm">
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{user.name}</p>
-                      <p className="text-xs text-gray-600 truncate">{user.phone || 'Sin teléfono'}</p>
-                      <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleDateString('es-ES')}</p>
+                      <p className="text-xs text-slate-600 truncate">{user.phone || 'Sin teléfono'}</p>
+                      <p className="text-xs text-slate-500">{new Date(user.createdAt).toLocaleDateString('es-ES')}</p>
                     </div>
                     <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'} className="text-xs flex-shrink-0">
                       {user.role}
@@ -61,14 +61,14 @@ export function RecentUsersPanel({ users, variant }: RecentUsersPanelProps) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Usuarios Recientes</CardTitle>
             <CardDescription>Últimos usuarios registrados</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="rounded-lg">
             <Link href="/admin/usuarios">
               Ver todos <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
@@ -78,13 +78,13 @@ export function RecentUsersPanel({ users, variant }: RecentUsersPanelProps) {
       <CardContent>
         <div className="space-y-4">
           {items.map((user) => (
-            <div key={user.id} className="flex items-center gap-3 p-3 border rounded-lg">
+            <div key={user.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl hover:bg-slate-50/60 transition-colors">
               <Avatar>
-                <AvatarFallback className="bg-blue-100 text-blue-600">{getInitials(user.name)}</AvatarFallback>
+                <AvatarFallback className="bg-blue-50 text-blue-600">{getInitials(user.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{user.name}</p>
-                <p className="text-sm text-gray-600 truncate">
+                <p className="text-sm text-slate-600 truncate">
                   {user.phone || 'Sin teléfono'} • {new Date(user.createdAt).toLocaleDateString('es-ES')}
                 </p>
               </div>

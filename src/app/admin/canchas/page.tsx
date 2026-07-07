@@ -91,7 +91,7 @@ export default function AdminCanchasPage() {
   const averagePrice = courts.length > 0 ? Math.round(courts.reduce((sum, c) => sum + c.pricePerHour, 0) / courts.length) : 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader
         title="Gestión de Canchas"
         backHref="/admin"
@@ -105,13 +105,13 @@ export default function AdminCanchasPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard icon={MapPin} iconClassName="text-blue-600" label="Total Canchas" value={courts.length} />
-          <StatCard icon={Eye} iconClassName="text-green-600" label="Activas" value={activeCount} />
-          <StatCard icon={EyeOff} iconClassName="text-red-600" label="Inactivas" value={courts.length - activeCount} />
-          <StatCard icon={DollarSign} iconClassName="text-yellow-600" label="Precio Promedio" value={`$${averagePrice}`} />
+          <StatCard icon={MapPin} tint="blue" label="Total Canchas" value={courts.length} />
+          <StatCard icon={Eye} tint="emerald" label="Activas" value={activeCount} />
+          <StatCard icon={EyeOff} tint="red" label="Inactivas" value={courts.length - activeCount} />
+          <StatCard icon={DollarSign} tint="yellow" label="Precio Promedio" value={`$${averagePrice}`} />
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border-slate-100">
           <CardHeader>
             <CardTitle>Lista de Canchas</CardTitle>
             <CardDescription>Gestiona todas las canchas del centro deportivo</CardDescription>

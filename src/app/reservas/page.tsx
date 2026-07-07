@@ -122,7 +122,7 @@ export default function ReservasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader title="Hacer Reserva" backHref="/dashboard" />
 
       <BookingStepper currentStep={currentStep} selectedCourt={selectedCourt} selectedDate={selectedDate} selectedTimeSlot={selectedTimeSlot} />

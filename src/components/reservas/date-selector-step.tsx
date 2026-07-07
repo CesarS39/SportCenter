@@ -16,28 +16,28 @@ interface DateSelectorStepProps {
 
 export function DateSelectorStep({ selectedCourt, selectedDate, onSelectDate, onChangeCourt }: DateSelectorStepProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <span className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">2</span>
+              <span className="bg-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">2</span>
               Seleccionar Fecha
             </CardTitle>
             <CardDescription>Elige el día para tu reserva</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={onChangeCourt}>
+          <Button variant="outline" size="sm" onClick={onChangeCourt} className="rounded-lg">
             Cambiar cancha
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200">
+        <div className="mb-6 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
           <div className="flex items-center gap-2">
             <span className="text-xl">{getSportIcon(selectedCourt.sportType.name)}</span>
             <div>
-              <p className="font-medium text-green-800">{selectedCourt.name}</p>
-              <p className="text-sm text-green-600">${selectedCourt.pricePerHour}/hora</p>
+              <p className="font-medium text-emerald-800">{selectedCourt.name}</p>
+              <p className="text-sm text-emerald-600">${selectedCourt.pricePerHour}/hora</p>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@ export function DateSelectorStep({ selectedCourt, selectedDate, onSelectDate, on
                 tomorrow.setDate(today.getDate() + 1)
                 return date < tomorrow || !isOperatingDay(date)
               }}
-              className="rounded-md border shadow-sm bg-white mx-auto"
+              className="rounded-xl border border-slate-100 shadow-sm bg-white mx-auto"
               classNames={{
                 months: 'flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 justify-center',
                 month: 'space-y-4 w-full flex flex-col',
@@ -85,7 +85,7 @@ export function DateSelectorStep({ selectedCourt, selectedDate, onSelectDate, on
           )}
 
           {selectedDate && (
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
               <p className="text-sm font-medium text-blue-800">Fecha seleccionada: {formatDate(selectedDate)}</p>
               <p className="text-xs text-blue-600 mt-1">Continuemos con la selección de horario</p>
             </div>

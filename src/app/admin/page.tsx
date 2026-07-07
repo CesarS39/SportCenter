@@ -56,19 +56,19 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <PageHeader
         title="Panel Admin"
         subtitle="SportCenter Dashboard"
         actions={
           <>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="rounded-lg">
               <Link href="/dashboard">
                 <LayoutDashboard className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Vista Usuario</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="rounded-lg">
               <LogOut className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Cerrar Sesión</span>
             </Button>
@@ -79,30 +79,30 @@ export default function AdminDashboard() {
       <main className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-6">
-            <Avatar className="h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0">
-              <AvatarFallback className="bg-red-100 text-red-600 text-lg font-semibold">
+            <Avatar className="h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0 ring-2 ring-red-100">
+              <AvatarFallback className="bg-red-50 text-red-600 text-lg font-semibold">
                 {profile?.name ? getInitials(profile.name) : 'A'}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate">
                 ¡Hola, {profile?.name?.split(' ')[0] || 'Admin'}! 👨‍💼
               </h2>
-              <p className="text-sm text-gray-600">Bienvenido al panel de administración</p>
+              <p className="text-sm text-slate-500">Bienvenido al panel de administración</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Button asChild className="h-12 text-sm">
+            <Button asChild className="h-12 text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">
               <Link href="/admin/canchas">
                 <MapPin className="h-4 w-4 mr-2" />
                 Gestionar Canchas
               </Link>
             </Button>
-            <Button variant="outline" asChild className="h-12 text-sm">
+            <Button variant="outline" asChild className="h-12 text-sm rounded-xl">
               <Link href="/admin/reservas">Ver Reservas</Link>
             </Button>
-            <Button variant="outline" asChild className="h-12 text-sm">
+            <Button variant="outline" asChild className="h-12 text-sm rounded-xl">
               <Link href="/admin/usuarios">Gestionar Usuarios</Link>
             </Button>
           </div>

@@ -31,13 +31,13 @@ interface UserRowCardProps {
 
 export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelete }: UserRowCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="rounded-2xl border-slate-100 hover:shadow-md transition-shadow">
       <CardContent className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Avatar className="h-12 w-12 flex-shrink-0">
+            <Avatar className="h-12 w-12 flex-shrink-0 ring-2 ring-slate-50">
               <AvatarFallback
-                className={`${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'} font-semibold`}
+                className={`${user.role === 'ADMIN' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'} font-semibold`}
               >
                 {getInitials(user.name)}
               </AvatarFallback>
@@ -60,7 +60,7 @@ export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelet
                 </Badge>
                 {isCurrentUser && <Badge variant="outline">Tú</Badge>}
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+              <div className="flex items-center gap-4 text-sm text-slate-600 flex-wrap">
                 <div className="flex items-center gap-1">
                   <Phone className="h-4 w-4" />
                   {user.phone || 'Sin teléfono'}
@@ -70,7 +70,7 @@ export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelet
                   Registrado: {formatDate(user.createdAt)}
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500 mt-1 flex-wrap">
+              <div className="flex items-center gap-4 text-xs text-slate-500 mt-1 flex-wrap">
                 <span>Total reservas: {user.totalReservations}</span>
                 <span>Activas: {user.activeReservations}</span>
                 <span>Completadas: {user.completedReservations}</span>
@@ -82,7 +82,7 @@ export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelet
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => onEdit(user)}>
+            <Button variant="outline" size="sm" onClick={() => onEdit(user)} className="rounded-lg">
               <Edit className="h-4 w-4 mr-1" />
               Editar
             </Button>
@@ -93,7 +93,7 @@ export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelet
                   variant="outline"
                   size="sm"
                   onClick={() => onToggleRole(user)}
-                  className={user.role === 'ADMIN' ? 'text-orange-600 hover:text-orange-700' : 'text-purple-600 hover:text-purple-700'}
+                  className={`rounded-lg ${user.role === 'ADMIN' ? 'text-orange-600 hover:text-orange-700' : 'text-purple-600 hover:text-purple-700'}`}
                 >
                   <Shield className="h-4 w-4 mr-1" />
                   {user.role === 'ADMIN' ? 'Degradar' : 'Promover'}
@@ -101,7 +101,7 @@ export function UserRowCard({ user, isCurrentUser, onEdit, onToggleRole, onDelet
 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                    <Button variant="outline" size="sm" className="rounded-lg text-red-600 hover:text-red-700">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>

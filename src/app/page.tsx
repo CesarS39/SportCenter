@@ -6,89 +6,86 @@ import { Clock, MapPin, Phone, Users, Calendar, Trophy, Star, ArrowRight, Shield
 
 export default function HomePage() {
   const courts = [
-    { 
-      name: 'Tenis', 
-      count: 2, 
-      price: 25, 
+    {
+      name: 'Tenis',
+      count: 2,
+      price: 25,
       icon: '🎾',
       description: 'Canchas profesionales con superficie de primera calidad',
-      features: ['Iluminación LED', 'Superficie profesional', 'Graderías']
+      features: ['Iluminación LED', 'Superficie profesional', 'Graderías'],
     },
-    { 
-      name: 'Pádel', 
-      count: 2, 
-      price: 30, 
+    {
+      name: 'Pádel',
+      count: 2,
+      price: 30,
       icon: '🏓',
       description: 'Canchas reglamentarias con cristales panorámicos',
-      features: ['Cristal panorámico', 'Césped sintético', 'Climatizado']
+      features: ['Cristal panorámico', 'Césped sintético', 'Climatizado'],
     },
-    { 
-      name: 'Fútbol 5', 
-      count: 1, 
-      price: 50, 
+    {
+      name: 'Fútbol 5',
+      count: 1,
+      price: 50,
       icon: '⚽',
       description: 'Campo de césped sintético de última generación',
-      features: ['Césped FIFA Quality', 'Iluminación profesional', 'Vestuarios']
-    }
+      features: ['Césped FIFA Quality', 'Iluminación profesional', 'Vestuarios'],
+    },
   ]
 
   const features = [
-    { 
-      icon: <Calendar className="h-7 w-7" />, 
-      title: 'Reservas Online', 
+    {
+      icon: <Calendar className="h-6 w-6" />,
+      title: 'Reservas Online',
       desc: 'Sistema de reservas 24/7 con confirmación instantánea',
-      color: 'bg-slate-600'
+      tint: 'bg-blue-50 text-blue-600',
     },
-    { 
-      icon: <Shield className="h-7 w-7" />, 
-      title: 'Seguridad Total', 
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: 'Seguridad Total',
       desc: 'Instalaciones seguras con vigilancia y protocolos sanitarios',
-      color: 'bg-emerald-600'
+      tint: 'bg-emerald-50 text-emerald-600',
     },
-    { 
-      icon: <Zap className="h-7 w-7" />, 
-      title: 'Tecnología Avanzada', 
+    {
+      icon: <Zap className="h-6 w-6" />,
+      title: 'Tecnología Avanzada',
       desc: 'Canchas equipadas con la mejor tecnología deportiva',
-      color: 'bg-indigo-600'
+      tint: 'bg-purple-50 text-purple-600',
     },
-    { 
-      icon: <Award className="h-7 w-7" />, 
-      title: 'Calidad Premium', 
+    {
+      icon: <Award className="h-6 w-6" />,
+      title: 'Calidad Premium',
       desc: 'Instalaciones certificadas de nivel profesional',
-      color: 'bg-amber-600'
-    }
+      tint: 'bg-amber-50 text-amber-600',
+    },
   ]
 
   const stats = [
     { number: '500+', label: 'Miembros Activos', icon: <Users className="h-5 w-5" /> },
     { number: '2000+', label: 'Partidos Jugados', icon: <Trophy className="h-5 w-5" /> },
     { number: '98%', label: 'Satisfacción', icon: <Star className="h-5 w-5" /> },
-    { number: '5', label: 'Canchas Premium', icon: <MapPin className="h-5 w-5" /> }
+    { number: '5', label: 'Canchas Premium', icon: <MapPin className="h-5 w-5" /> },
   ]
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header - Mejorado para mobile */}
-      <header className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
             <div className="flex items-center min-w-0">
-              <div className="relative flex-shrink-0">
-                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600 mr-2 sm:mr-3" />
-                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-              </div>
+              <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-600 mr-2.5 sm:mr-3 flex-shrink-0">
+                <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </span>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate">SportCenter</h1>
                 <p className="text-xs text-slate-500 font-medium hidden sm:block">CLUB DEPORTIVO PREMIUM</p>
               </div>
             </div>
-            
-            {/* Desktop Navigation */}
+
             <div className="hidden sm:flex gap-3">
-              <Button variant="ghost" asChild className="hover:bg-emerald-50 transition-colors">
+              <Button variant="ghost" asChild className="rounded-xl hover:bg-emerald-50 transition-colors">
                 <Link href="/auth/login">Iniciar Sesión</Link>
               </Button>
-              <Button asChild className="bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm">
+              <Button asChild className="rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-colors">
                 <Link href="/auth/register">
                   <span className="hidden md:inline">Únete Ahora</span>
                   <span className="md:hidden">Únete</span>
@@ -97,73 +94,58 @@ export default function HomePage() {
               </Button>
             </div>
 
-            {/* Mobile Navigation */}
             <div className="flex sm:hidden gap-2">
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" asChild className="rounded-lg">
                 <Link href="/auth/login">Login</Link>
               </Button>
-              <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700">
-                <Link href="/auth/register">
-                  Únete
-                </Link>
+              <Button size="sm" asChild className="rounded-lg bg-emerald-600 hover:bg-emerald-700">
+                <Link href="/auth/register">Únete</Link>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section - Colores suaves */}
-      <section className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
-        {/* Background gradient suave */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-600 to-slate-700"></div>
-        
-        {/* Decorative elements suaves */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-48 sm:w-72 h-48 sm:h-72 bg-white/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-64 sm:w-96 h-64 sm:h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-40 right-20 w-32 sm:w-48 h-32 sm:h-48 bg-teal-400/10 rounded-full blur-2xl"></div>
-        </div>
+      {/* Hero */}
+      <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 bg-mesh-emerald" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-white">
-            {/* Badge superior */}
-            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/15 backdrop-blur-sm rounded-full text-xs sm:text-sm font-semibold mb-6 sm:mb-8 border border-white/20">
+            <div className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 backdrop-blur-xl rounded-full text-xs sm:text-sm font-semibold mb-6 sm:mb-8 border border-white/15">
               <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-amber-300 fill-current" />
               Club Deportivo #1 en la Ciudad
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
               <span className="block">Vive el</span>
-              <span className="bg-gradient-to-r from-amber-300 to-orange-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-emerald-300 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
                 Deporte
               </span>
               <span className="block">como nunca antes</span>
             </h1>
-            
-            <p className="text-lg sm:text-xl md:text-2xl text-slate-100 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-4">
-              Canchas de nivel profesional, tecnología avanzada y una experiencia deportiva única. 
+
+            <p className="text-lg sm:text-xl md:text-2xl text-slate-300 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-4">
+              Canchas de nivel profesional, tecnología avanzada y una experiencia deportiva única.{' '}
               <strong className="text-white">Reserva online en segundos.</strong>
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-10 sm:mb-12 px-4">
-              <Button size="lg" className="bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg shadow-lg transition-colors">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-10 sm:mb-16 px-4">
+              <Button size="lg" asChild className="rounded-xl bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 h-auto text-base sm:text-lg shadow-lg transition-colors">
                 <Link href="/auth/register" className="flex items-center justify-center w-full">
                   Comenzar Gratis
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Link>
               </Button>
-              
             </div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mt-12 sm:mt-16">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 max-w-3xl mx-auto">
               {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex justify-center text-white/70 mb-2">
-                    {stat.icon}
-                  </div>
+                <div key={index} className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 py-4 sm:py-6 px-2">
+                  <div className="flex justify-center text-emerald-300 mb-2">{stat.icon}</div>
                   <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">{stat.number}</div>
-                  <div className="text-xs sm:text-sm text-slate-200 font-medium">{stat.label}</div>
+                  <div className="text-xs sm:text-sm text-slate-300 font-medium">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -171,67 +153,72 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section - Colores suaves */}
+      {/* Features */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge variant="secondary" className="mb-4 px-3 py-1 bg-slate-100 text-slate-700">
+            <Badge variant="secondary" className="mb-4 px-3 py-1 rounded-full bg-slate-100 text-slate-700">
               ¿Por qué SportCenter?
             </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
               La experiencia deportiva
               <span className="text-emerald-600"> definitiva</span>
             </h2>
             <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-              Combinamos tecnología de vanguardia con instalaciones de primera clase para ofrecerte la mejor experiencia deportiva
+              Combinamos tecnología de vanguardia con instalaciones de primera clase para ofrecerte la mejor
+              experiencia deportiva
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="group">
-                <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-lg border border-slate-100 text-center h-full transition-all duration-300 hover:scale-105">
-                  <div className={`${feature.color} w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 text-white group-hover:scale-105 transition-transform duration-300`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-slate-900">{feature.title}</h3>
-                  <p className="text-slate-600 leading-relaxed text-sm sm:text-base">{feature.desc}</p>
+              <div
+                key={index}
+                className="rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md border border-slate-100 text-center h-full transition-all duration-300"
+              >
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 ${feature.tint}`}>
+                  {feature.icon}
                 </div>
+                <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-slate-900">{feature.title}</h3>
+                <p className="text-slate-600 leading-relaxed text-sm sm:text-base">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Courts Section - Mejorado */}
+      {/* Courts */}
       <section id="canchas" className="py-16 sm:py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
-            <Badge variant="secondary" className="mb-4 px-3 py-1 bg-slate-100 text-slate-700">
+            <Badge variant="secondary" className="mb-4 px-3 py-1 rounded-full bg-slate-100 text-slate-700">
               Nuestras Instalaciones
             </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
               Canchas de
               <span className="text-emerald-600"> nivel profesional</span>
             </h2>
             <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-              Cada cancha está diseñada con los más altos estándares de calidad y equipada con tecnología de última generación
+              Cada cancha está diseñada con los más altos estándares de calidad y equipada con tecnología de última
+              generación
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {courts.map((court, index) => (
-              <Card key={index} className="group hover:scale-105 transition-all duration-300 border-0 shadow-lg hover:shadow-xl bg-white overflow-hidden">
+              <Card
+                key={index}
+                className="group hover:-translate-y-1 transition-all duration-300 border-slate-100 shadow-sm hover:shadow-xl bg-white overflow-hidden rounded-2xl p-0 gap-0"
+              >
                 <div className="relative">
-                  {/* Header con gradiente suave */}
-                  <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 sm:p-6 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16"></div>
+                  <div className="bg-gradient-to-br from-emerald-600 to-teal-600 p-4 sm:p-6 text-white relative overflow-hidden rounded-t-2xl">
+                    <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-full -translate-y-12 sm:-translate-y-16 translate-x-12 sm:translate-x-16" />
                     <div className="relative z-10">
                       <div className="text-3xl sm:text-5xl mb-3">{court.icon}</div>
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-xl sm:text-2xl font-bold mb-1">{court.name}</h3>
-                          <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs sm:text-sm">
+                          <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs sm:text-sm rounded-full">
                             {court.count} cancha{court.count > 1 ? 's' : ''}
                           </Badge>
                         </div>
@@ -243,20 +230,19 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* Content */}
                   <CardContent className="p-4 sm:p-6">
                     <p className="text-slate-600 mb-4 leading-relaxed text-sm sm:text-base">{court.description}</p>
-                    
+
                     <div className="space-y-2 mb-6">
                       {court.features.map((feature, idx) => (
                         <div key={idx} className="flex items-center text-xs sm:text-sm text-slate-700">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 flex-shrink-0" />
                           {feature}
                         </div>
                       ))}
                     </div>
 
-                    <Button className="w-full bg-emerald-600 hover:bg-emerald-700 font-semibold py-2.5 sm:py-3 transition-colors">
+                    <Button asChild className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 font-semibold py-2.5 sm:py-3 h-auto transition-colors">
                       <Link href="/auth/register" className="flex items-center justify-center w-full">
                         Reservar Ahora
                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -270,56 +256,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section - Colores suaves */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-600 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-black/10"></div>
-          <div className="absolute top-20 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-white/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-64 sm:w-80 h-64 sm:h-80 bg-emerald-400/10 rounded-full blur-3xl"></div>
-        </div>
-        
+      {/* CTA */}
+      <section className="relative py-16 sm:py-20 overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 bg-mesh-emerald opacity-80" />
+
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 tracking-tight">
             ¿Listo para jugar al siguiente nivel?
           </h2>
-          <p className="text-lg sm:text-xl mb-8 text-slate-100">
+          <p className="text-lg sm:text-xl mb-8 text-slate-200">
             Únete a nuestra comunidad deportiva y disfruta de instalaciones premium con reservas online 24/7
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg transition-colors">
-              <Link href="/auth/register">
-                Registrarse Gratis
-              </Link>
+            <Button size="lg" asChild className="rounded-xl bg-white text-emerald-700 hover:bg-slate-50 font-bold py-3 sm:py-4 px-6 sm:px-8 h-auto text-base sm:text-lg transition-colors">
+              <Link href="/auth/register">Registrarse Gratis</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Contact Info - Suave */}
-      <section className="py-12 sm:py-16 bg-slate-800">
+      {/* Contact */}
+      <section className="py-12 sm:py-16 bg-slate-900 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             <div className="text-center group">
-              <div className="bg-emerald-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
-                <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              <div className="bg-emerald-500/15 text-emerald-300 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <MapPin className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
               <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Ubicación Premium</h4>
               <p className="text-slate-300 text-sm sm:text-base">Av. Principal 123, Ciudad</p>
               <p className="text-xs sm:text-sm text-slate-400 mt-2">Zona exclusiva y segura</p>
             </div>
-            
+
             <div className="text-center group">
-              <div className="bg-slate-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
-                <Phone className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              <div className="bg-blue-500/15 text-blue-300 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <Phone className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
               <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Atención 24/7</h4>
               <p className="text-slate-300 text-sm sm:text-base">+1 (555) 123-4567</p>
               <p className="text-xs sm:text-sm text-slate-400 mt-2">Soporte personalizado</p>
             </div>
-            
+
             <div className="text-center group">
-              <div className="bg-indigo-600 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
-                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              <div className="bg-purple-500/15 text-purple-300 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <Clock className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
               <h4 className="text-lg sm:text-xl font-bold text-white mb-2">Horarios Amplios</h4>
               <div className="text-slate-300 space-y-1 text-sm sm:text-base">
@@ -332,25 +312,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer - Elegante */}
-      <footer className="bg-slate-900 text-white py-8 sm:py-12">
+      {/* Footer */}
+      <footer className="bg-slate-950 text-white py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
-              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-400 mr-2 sm:mr-3" />
+              <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-600 mr-2 sm:mr-3">
+                <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </span>
               <div>
                 <span className="text-xl sm:text-2xl font-bold">SportCenter</span>
                 <div className="text-xs text-slate-400">CLUB DEPORTIVO PREMIUM</div>
               </div>
             </div>
-            
+
             <div className="flex justify-center space-x-6 sm:space-x-8 mb-6">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse delay-300"></div>
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-700"></div>
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse delay-300" />
+              <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse delay-700" />
             </div>
-            
-            <p className="text-slate-400 mb-2 text-sm sm:text-base">© 2025 SportCenter. Todos los derechos reservados Kanek.</p>
+
+            <p className="text-slate-400 mb-2 text-sm sm:text-base">© 2026 SportCenter. Todos los derechos reservados Kanek.</p>
             <p className="text-xs sm:text-sm text-slate-500">Desarrollado con 💚 para los amantes del deporte</p>
           </div>
         </div>

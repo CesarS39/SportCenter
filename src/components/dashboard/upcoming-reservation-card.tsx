@@ -6,10 +6,10 @@ import { formatTime } from '@/lib/utils'
 import type { DashboardReservation } from '@/lib/hooks/use-dashboard'
 
 const STATUS_STYLES: Record<DashboardReservation['status'], string> = {
-  ACTIVE: 'bg-green-100 text-green-800',
+  ACTIVE: 'bg-emerald-100 text-emerald-800',
   CANCELLED: 'bg-red-100 text-red-800',
   CANCELLED_ADMIN: 'bg-orange-100 text-orange-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
+  COMPLETED: 'bg-slate-100 text-slate-800',
 }
 
 const STATUS_LABELS: Record<DashboardReservation['status'], string> = {
@@ -30,7 +30,7 @@ export function UpcomingReservationCard({ reservation }: { reservation: Dashboar
   else if (isTomorrow) dateLabel = 'Mañana'
 
   return (
-    <Card className={`border shadow-sm ${isToday ? 'bg-green-50 border-green-200' : ''}`}>
+    <Card className={`rounded-2xl border-slate-100 shadow-sm ${isToday ? 'bg-emerald-50 border-emerald-200' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="text-2xl flex-shrink-0">{getSportIcon(reservation.court.sportType.name)}</div>
@@ -41,16 +41,16 @@ export function UpcomingReservationCard({ reservation }: { reservation: Dashboar
               <Badge variant="outline" className="text-xs flex-shrink-0">
                 {reservation.court.sportType.name}
               </Badge>
-              {isToday && <Badge className="bg-green-600 text-white text-xs">HOY</Badge>}
+              {isToday && <Badge className="bg-emerald-600 text-white text-xs">HOY</Badge>}
             </div>
 
-            <div className="space-y-1 text-sm text-gray-600">
+            <div className="space-y-1 text-sm text-slate-600">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 flex-shrink-0" />
                 <span className="font-medium">
                   {dateLabel}
                   {!isToday && !isTomorrow && (
-                    <span className="text-xs font-normal text-gray-500 ml-1">
+                    <span className="text-xs font-normal text-slate-500 ml-1">
                       ({reservationDate.toLocaleDateString('es-ES', { weekday: 'short' })})
                     </span>
                   )}

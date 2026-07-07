@@ -87,7 +87,7 @@ export function UserEditDialog({
                 <SelectItem value="ADMIN">Administrador</SelectItem>
               </SelectContent>
             </Select>
-            {isSelf && <p className="text-xs text-gray-500">No puedes cambiar tu propio rol</p>}
+            {isSelf && <p className="text-xs text-slate-500">No puedes cambiar tu propio rol</p>}
           </div>
 
           <div className="flex gap-2 pt-4">

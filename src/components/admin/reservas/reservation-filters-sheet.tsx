@@ -45,7 +45,7 @@ export function ReservationFiltersSheet({
           <div>
             <label className="text-sm font-medium mb-2 block">Buscar</label>
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Usuario, cancha..."
                 value={filters.searchTerm}

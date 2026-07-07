@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 export type ReservationStatus = 'ACTIVE' | 'CANCELLED' | 'CANCELLED_ADMIN' | 'COMPLETED'
 
 const STYLES: Record<ReservationStatus, string> = {
-  ACTIVE: 'bg-green-100 text-green-800 border-green-200',
+  ACTIVE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   CANCELLED: 'bg-orange-100 text-orange-800 border-orange-200',
   CANCELLED_ADMIN: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   COMPLETED: 'bg-blue-100 text-blue-800 border-blue-200',
